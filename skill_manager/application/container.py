@@ -3,6 +3,8 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
+from skill_manager.db import Database
+from skill_manager.db.repositories import ScanConfigRepository
 from skill_manager.harness import HarnessKernelService, HarnessSupportStore
 from skill_manager.paths import AppPaths, resolve_app_paths
 
@@ -40,6 +42,8 @@ from .skills.read_models import SkillsReadModelService
 from .skills.source_fetch import SourceFetchService
 from .skills.store import SkillStore
 from .marketplace_cache import MarketplaceCache
+from .scan import ScanConfigService, ScanService
+from .scan.target_resolver import ScanTargetResolver
 
 
 @dataclass(frozen=True)
@@ -70,6 +74,9 @@ class BackendContainer:
     mcp_read_models: McpReadModelService
     mcp_queries: McpQueryService
     mcp_mutations: McpMutationService
+    db: Database
+    scan_config_service: ScanConfigService
+    scan_service: ScanService
 
 
 def build_backend_container(
@@ -169,6 +176,13 @@ def build_backend_container(
         enrichment=mcp_enrichment,
     )
 
+    db = Database(paths.db_path)
+    scan_config_service = ScanConfigService(ScanConfigRepository(db))
+    scan_service = ScanService(
+        scan_config_service,
+        target_resolver=ScanTargetResolver(skills_queries),
+    )
+
     return BackendContainer(
         paths=paths,
         harness_kernel=harness_kernel,
@@ -196,4 +210,7 @@ def build_backend_container(
         mcp_read_models=mcp_read_models,
         mcp_queries=mcp_queries,
         mcp_mutations=mcp_mutations,
+        db=db,
+        scan_config_service=scan_config_service,
+        scan_service=scan_service,
     )

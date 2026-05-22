@@ -12,6 +12,17 @@ const hooks = vi.hoisted(() => {
     updateFilters: vi.fn(),
     resetFilters: vi.fn(),
     toast: vi.fn(),
+    viewMode: "grid" as "grid" | "board" | "matrix" | "scan",
+    scanSkill: vi.fn(async () => undefined),
+    revealConfigApiKey: vi.fn(async () => "sk-secret"),
+    validateConfig: vi.fn(async () => ({
+      ok: true,
+      message: "Connectivity test passed.",
+      provider: "openai-compatible",
+      model: "model-a",
+      durationMs: 12,
+      errorCode: null,
+    })),
   };
 });
 
@@ -63,7 +74,25 @@ vi.mock("../model/session", () => ({
 }));
 
 vi.mock("../model/useInUseViewMode", () => ({
-  useInUseViewMode: () => ["grid", vi.fn()] as const,
+  useInUseViewMode: () => [hooks.viewMode, vi.fn()] as const,
+}));
+
+vi.mock("../model/use-skill-scan", () => ({
+  useSkillScan: () => ({
+    scanState: {},
+    getScanState: () => ({ status: "idle", result: null, error: null, completedAt: null }),
+    scanSkill: hooks.scanSkill,
+    llmConfig: null,
+    configs: [],
+    activeConfigId: null,
+    addConfig: vi.fn(async () => ({ id: 1 })),
+    editConfig: vi.fn(async () => undefined),
+    removeConfig: vi.fn(async () => undefined),
+    selectConfig: vi.fn(async () => undefined),
+    validateConfig: hooks.validateConfig,
+    revealConfigApiKey: hooks.revealConfigApiKey,
+    configLoaded: true,
+  }),
 }));
 
 vi.mock("../../../components/Toast", async () => {
@@ -95,6 +124,10 @@ describe("SkillsInUsePage", () => {
     hooks.updateFilters.mockClear();
     hooks.resetFilters.mockClear();
     hooks.toast.mockClear();
+    hooks.scanSkill.mockClear();
+    hooks.revealConfigApiKey.mockClear();
+    hooks.validateConfig.mockClear();
+    hooks.viewMode = "grid";
   });
 
   it("opens a remove confirm popup from the skill card menu", async () => {
@@ -132,6 +165,22 @@ describe("SkillsInUsePage", () => {
 
     expect(screen.getByRole("button", { name: "Matrix" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Table" })).not.toBeInTheDocument();
+  });
+
+  it("renders the scan view mode inside skills in use", () => {
+    hooks.viewMode = "scan";
+
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter initialEntries={["/skills/use?view=scan"]}>
+          <SkillsInUsePage />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByRole("button", { name: "Scan" })).toBeInTheDocument();
+    expect(screen.getByRole("table", { name: "Skills scan table" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Configure LLM scan" })).toBeInTheDocument();
   });
 
   it("opens a delete confirm popup from the skill card menu", async () => {

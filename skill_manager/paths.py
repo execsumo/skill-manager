@@ -28,6 +28,7 @@ class AppPaths:
     settings_path: Path
     runtime_state_path: Path
     server_log_path: Path
+    db_path: Path
 
 
 def resolve_app_paths(env: dict[str, str] | None = None) -> AppPaths:
@@ -50,6 +51,7 @@ def resolve_app_paths(env: dict[str, str] | None = None) -> AppPaths:
         settings_path=settings_path,
         runtime_state_path=state_dir / "runtime.json",
         server_log_path=state_dir / "server.log",
+        db_path=data_dir / "skill-manager.db",
     )
 
 
