@@ -4,6 +4,8 @@ import unittest
 
 from skill_manager.application.mcp.install_resolver import (
     registry_install_config,
+    registry_install_option_by_key,
+    registry_install_options,
     registry_managed_name,
     resolve_registry_server_spec,
 )
@@ -43,6 +45,77 @@ class RegistryManagedNameTests(unittest.TestCase):
 
 
 class RegistryInstallResolverTests(unittest.TestCase):
+    def test_install_option_keys_are_stable_for_supported_packages_and_remotes(self) -> None:
+        options = registry_install_options(
+            {
+                "name": "ai.example/mcp",
+                "version": "1.0.0",
+                "packages": [
+                    {
+                        "registryType": "npm",
+                        "identifier": "@example/npm-mcp",
+                        "version": "1.0.0",
+                        "transport": {"type": "stdio"},
+                    },
+                    {
+                        "registryType": "pypi",
+                        "identifier": "example-mcp",
+                        "version": "2.0.0",
+                        "transport": {"type": "stdio"},
+                    },
+                    {
+                        "registryType": "oci",
+                        "identifier": "ghcr.io/example/mcp",
+                        "version": "3.0.0",
+                        "transport": {"type": "stdio"},
+                    },
+                ],
+                "remotes": [
+                    {"type": "streamable-http", "url": "https://api.example.com/mcp"},
+                    {"type": "sse", "url": "https://api.example.com/sse"},
+                ],
+            }
+        )
+
+        self.assertEqual(
+            [option.option_key for option in options],
+            [
+                "package:npm:@example/npm-mcp:1.0.0",
+                "package:pypi:example-mcp:2.0.0",
+                "package:oci:ghcr.io/example/mcp:3.0.0",
+                "remote:streamable-http:https://api.example.com/mcp",
+                "remote:sse:https://api.example.com/sse",
+            ],
+        )
+
+    def test_resolves_specific_install_option_by_key(self) -> None:
+        detail = _detail(
+            packages=[
+                {
+                    "registryType": "npm",
+                    "identifier": "@example/npm-mcp",
+                    "version": "1.0.0",
+                    "transport": {"type": "stdio"},
+                },
+                {
+                    "registryType": "pypi",
+                    "identifier": "example-mcp",
+                    "version": "2.0.0",
+                    "transport": {"type": "stdio"},
+                },
+            ],
+        )
+
+        option = registry_install_option_by_key(detail, "package:pypi:example-mcp:2.0.0")
+        spec = resolve_registry_server_spec(
+            detail,
+            option_key="package:pypi:example-mcp:2.0.0",
+        )
+
+        self.assertIsNotNone(option)
+        self.assertEqual(spec.command, "uvx")
+        self.assertEqual(spec.args, ("example-mcp==2.0.0",))
+
     def test_npm_stdio_package_maps_to_npx_command(self) -> None:
         spec = resolve_registry_server_spec(
             _detail(

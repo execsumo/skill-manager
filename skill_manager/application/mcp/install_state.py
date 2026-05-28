@@ -1,16 +1,19 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from typing import Mapping
 
-from skill_manager.errors import MutationError
-
 from .install_config import ArgumentBinding
+from .install_intent import (
+    ManagedMcpRecord,
+    RegistryInstallIntent,
+    install_intent_config_status,
+    resolve_enable_record as resolve_enable_managed_record,
+)
 from .install_resolver import (
     RegistryInstallOption,
     registry_install_option,
-    resolve_registry_server_spec,
 )
 from .store import McpServerSpec
 
@@ -35,11 +38,15 @@ class McpInstallConfigStatus:
 def install_config_status(
     detail: Mapping[str, object] | None,
     spec: McpServerSpec | None,
+    install_intent: RegistryInstallIntent | None = None,
 ) -> McpInstallConfigStatus:
     option = registry_install_option(detail or {})
     fields = option.fields if option is not None else ()
     if not fields:
         return McpInstallConfigStatus()
+    if install_intent is not None:
+        has_fields, missing = install_intent_config_status(detail or {}, install_intent)
+        return McpInstallConfigStatus(has_fields=has_fields, missing_required=missing)
     values = current_install_config_values(option, spec) if spec is not None else {}
     missing = tuple(
         field.name
@@ -49,37 +56,21 @@ def install_config_status(
     return McpInstallConfigStatus(has_fields=True, missing_required=missing)
 
 
-def resolve_enable_spec(
+def resolve_enable_managed_spec(
     detail: Mapping[str, object],
-    spec: McpServerSpec,
+    record: ManagedMcpRecord,
     *,
     config: Mapping[str, object] | None,
-) -> McpServerSpec:
-    option = registry_install_option(detail)
-    if option is None:
-        return spec
-    status = install_config_status(detail, spec)
-    if config is None:
-        if status.missing_required:
-            raise MutationError(
-                f"missing required install config: {', '.join(status.missing_required)}",
-                status=400,
-            )
-        return spec
-
-    merged_config: dict[str, object] = dict(current_install_config_values(option, spec))
-    for key, value in config.items():
-        if value is None or value == "":
-            continue
-        merged_config[key] = value
-
-    resolved = resolve_registry_server_spec(detail, config=merged_config)
-    return replace(
-        resolved,
-        name=spec.name,
-        display_name=spec.display_name,
-        source=spec.source,
-        installed_at=spec.installed_at,
+) -> ManagedMcpRecord:
+    legacy_values: Mapping[str, str] | None = None
+    if record.install_intent is None and record.spec.source.kind == "marketplace":
+        option = registry_install_option(detail)
+        legacy_values = current_install_config_values(option, record.spec) if option is not None else {}
+    return resolve_enable_managed_record(
+        detail,
+        record,
+        config=config,
+        legacy_values=legacy_values,
     )
 
 
@@ -270,5 +261,5 @@ __all__ = [
     "McpInstallConfigStatus",
     "current_install_config_values",
     "install_config_status",
-    "resolve_enable_spec",
+    "resolve_enable_managed_spec",
 ]

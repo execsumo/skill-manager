@@ -349,8 +349,10 @@ describe("McpServerDetailView", () => {
           ],
           configChoices: [
             {
+              id: "managed",
               sourceKind: "managed",
               observedHarness: null,
+              recommended: true,
               label: "Skill Manager config",
               logoKey: null,
               configPath: null,
@@ -519,8 +521,10 @@ describe("McpServerDetailView", () => {
           ],
           configChoices: [
             {
+              id: "managed",
               sourceKind: "managed",
               observedHarness: null,
+              recommended: false,
               label: "Skill Manager config",
               logoKey: null,
               configPath: null,
@@ -537,8 +541,10 @@ describe("McpServerDetailView", () => {
               env: [],
             },
             {
+              id: "harness:cursor",
               sourceKind: "harness",
               observedHarness: "cursor",
+              recommended: true,
               label: "Cursor config",
               logoKey: "cursor",
               configPath: "/tmp/.cursor/mcp.json",

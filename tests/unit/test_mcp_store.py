@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from skill_manager.application.mcp.install_intent import ManagedMcpRecord, RegistryInstallIntent
 from skill_manager.application.mcp.store import McpServerSpec, McpServerStore, McpSource
 
 
@@ -86,9 +87,28 @@ class McpServerStoreTests(unittest.TestCase):
 
             payload = json.loads(manifest_path.read_text(encoding="utf-8"))
 
-            self.assertEqual(payload["version"], 5)
+            self.assertEqual(payload["version"], 6)
             self.assertEqual(len(payload["servers"]), 1)
             self.assertEqual(payload["servers"][0]["name"], "exa")
+
+    def test_round_trip_registry_install_intent(self) -> None:
+        with TemporaryDirectory() as tmp:
+            store = McpServerStore(Path(tmp) / "manifest.json")
+            intent = RegistryInstallIntent.create(
+                qualified_name="ai.cueapi/mcp",
+                option_key="package:npm:@cueapi/mcp:0.1.3",
+                values={"CUEAPI_API_KEY": "secret"},
+            )
+            store.upsert_record(ManagedMcpRecord(spec=_spec("cueapi"), install_intent=intent))
+
+            record = store.get_record("cueapi")
+
+            self.assertIsNotNone(record)
+            assert record is not None
+            self.assertEqual(record.install_intent, intent)
+            payload = json.loads((Path(tmp) / "manifest.json").read_text(encoding="utf-8"))
+            self.assertEqual(payload["servers"][0]["installIntent"]["kind"], "registry")
+            self.assertEqual(payload["servers"][0]["installIntent"]["values"]["CUEAPI_API_KEY"], "secret")
 
     def test_round_trip_http_spec_preserves_headers_cleartext(self) -> None:
         with TemporaryDirectory() as tmp:

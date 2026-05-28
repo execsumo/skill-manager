@@ -113,8 +113,14 @@ class McpInventoryEntryResponse(BaseModel):
     spec: McpServerSpecResponse | None = None
     canEnable: bool
     enabledStatus: Literal["enabled", "disabled"]
-    availabilityStatus: Literal["available", "unavailable"]
-    availabilityReason: str | None = None
+    availabilityStatus: Literal["available", "unavailable"] = Field(
+        ...,
+        description="Deprecated compatibility field; use mcpStatus instead.",
+    )
+    availabilityReason: str | None = Field(
+        default=None,
+        description="Deprecated compatibility field; use mcpStatus.reason instead.",
+    )
     mcpStatus: McpStatusResponse
     installConfigStatus: McpInstallConfigStatusResponse
     sightings: list[McpBindingResponse]
@@ -163,6 +169,7 @@ class McpEnvEntryResponse(BaseModel):
 
 
 class McpConfigChoiceResponse(BaseModel):
+    id: str
     sourceKind: Literal["managed", "harness"]
     observedHarness: str | None = Field(default=None, title="Observed harness")
     label: str
@@ -171,6 +178,7 @@ class McpConfigChoiceResponse(BaseModel):
     payloadPreview: dict[str, object]
     spec: McpServerSpecResponse
     env: list[McpEnvEntryResponse] = Field(default_factory=list)
+    recommended: bool = False
 
 
 class McpMarketplaceLinkResponse(BaseModel):
@@ -210,6 +218,7 @@ class McpIdentitySightingResponse(BaseModel):
     payloadPreview: dict[str, object]
     spec: McpServerSpecResponse
     env: list[McpEnvEntryResponse] = Field(default_factory=list)
+    recommended: bool = False
 
 
 class McpAdoptionIssueResponse(BaseModel):

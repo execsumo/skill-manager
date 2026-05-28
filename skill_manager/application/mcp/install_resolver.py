@@ -31,6 +31,7 @@ _SAFE_NAME_RE = re.compile(r"[^a-z0-9]+")
 
 @dataclass(frozen=True)
 class RegistryInstallOption:
+    option_key: str
     transport: Literal["stdio", "http", "sse"]
     command: str | None = None
     args: tuple[str, ...] | None = None
@@ -47,6 +48,7 @@ class _PackageInstallInput:
     registry_type: str
     identifier: str
     version: str
+    option_key: str
     fields: tuple[McpInstallConfigField, ...]
     env_bindings: tuple[EnvBinding, ...]
     argument_bindings: tuple[ArgumentBinding, ...]
@@ -68,11 +70,22 @@ def registry_install_option(detail: Mapping[str, object]) -> RegistryInstallOpti
     return options[0] if options else None
 
 
+def registry_install_option_by_key(
+    detail: Mapping[str, object],
+    option_key: str,
+) -> RegistryInstallOption | None:
+    return next(
+        (option for option in registry_install_options(_server_payload(detail)) if option.option_key == option_key),
+        None,
+    )
+
+
 def resolve_registry_server_spec(
     detail: Mapping[str, object],
     *,
     config: Mapping[str, object] | None = None,
     allow_missing_required: bool = False,
+    option_key: str | None = None,
 ) -> McpServerSpec:
     server = _server_payload(detail)
     qualified_name = _str(detail.get("qualifiedName")) or _str(server.get("name"))
@@ -85,7 +98,9 @@ def resolve_registry_server_spec(
             f"registry server '{qualified_name}' has no supported install configuration",
             status=400,
         )
-    option = options[0]
+    option = next((candidate for candidate in options if candidate.option_key == option_key), None) if option_key else None
+    if option is None:
+        option = options[0]
     common = {
         "name": registry_managed_name(qualified_name),
         "display_name": display_name,
@@ -177,10 +192,13 @@ def _package_install_input(package: object, server: Mapping[str, object]) -> _Pa
     argument_bindings: list[ArgumentBinding] = []
     fields.extend(argument_fields_and_bindings(package.get("runtimeArguments"), "runtimeArgument", argument_bindings))
     fields.extend(argument_fields_and_bindings(package.get("packageArguments"), "packageArgument", argument_bindings))
+    registry_type = _str(package.get("registryType")).lower()
+    version = _str(package.get("version")) or _str(server.get("version"))
     return _PackageInstallInput(
-        registry_type=_str(package.get("registryType")).lower(),
+        registry_type=registry_type,
         identifier=identifier,
-        version=_str(package.get("version")) or _str(server.get("version")),
+        version=version,
+        option_key=_package_option_key(registry_type, identifier, version),
         fields=dedupe_fields(fields),
         env_bindings=tuple(env_bindings),
         argument_bindings=tuple(argument_bindings),
@@ -193,6 +211,7 @@ def _build_package_option(install_input: _PackageInstallInput) -> RegistryInstal
         return None
     command, args = command_builder(install_input.identifier, install_input.version)
     return RegistryInstallOption(
+        option_key=install_input.option_key,
         transport="stdio",
         command=command,
         args=args,
@@ -223,6 +242,7 @@ def _remote_options(server: Mapping[str, object]) -> list[RegistryInstallOption]
         fields.extend(header_fields_and_bindings(remote, header_bindings))
         options.append(
             RegistryInstallOption(
+                option_key=_remote_option_key(remote_type, url),
                 transport=transport,
                 url=url,
                 fields=dedupe_fields(fields),
@@ -262,6 +282,14 @@ def _versioned_oci_identifier(identifier: str, version: str) -> str:
     if ":" in last_segment:
         return identifier
     return f"{identifier}:{version}"
+
+
+def _package_option_key(registry_type: str, identifier: str, version: str) -> str:
+    return f"package:{registry_type}:{identifier}:{version}"
+
+
+def _remote_option_key(remote_type: str, url: str) -> str:
+    return f"remote:{remote_type}:{url}"
 
 
 def _npm_package_command(identifier: str, version: str) -> tuple[str, tuple[str, ...]]:
@@ -311,6 +339,7 @@ __all__ = [
     "RegistryInstallOption",
     "registry_install_config",
     "registry_install_option",
+    "registry_install_option_by_key",
     "registry_install_options",
     "registry_managed_name",
     "resolve_registry_server_spec",

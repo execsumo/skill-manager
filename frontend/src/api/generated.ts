@@ -1093,6 +1093,8 @@ export interface components {
             configPath?: string | null;
             /** Env */
             env?: components["schemas"]["McpEnvEntryResponse"][];
+            /** Id */
+            id: string;
             /** Label */
             label: string;
             /** Logokey */
@@ -1103,6 +1105,11 @@ export interface components {
             payloadPreview: {
                 [key: string]: unknown;
             };
+            /**
+             * Recommended
+             * @default false
+             */
+            recommended: boolean;
             /**
              * Sourcekind
              * @enum {string}
@@ -1146,6 +1153,11 @@ export interface components {
             payloadPreview: {
                 [key: string]: unknown;
             };
+            /**
+             * Recommended
+             * @default false
+             */
+            recommended: boolean;
             spec: components["schemas"]["McpServerSpecResponse"];
         };
         /** McpInstallConfigFieldResponse */
@@ -1215,10 +1227,14 @@ export interface components {
         };
         /** McpInventoryEntryResponse */
         McpInventoryEntryResponse: {
-            /** Availabilityreason */
+            /**
+             * Availabilityreason
+             * @description Deprecated compatibility field; use mcpStatus.reason instead.
+             */
             availabilityReason?: string | null;
             /**
              * Availabilitystatus
+             * @description Deprecated compatibility field; use mcpStatus instead.
              * @enum {string}
              */
             availabilityStatus: "available" | "unavailable";
@@ -1458,10 +1474,14 @@ export interface components {
         };
         /** McpServerDetailResponse */
         McpServerDetailResponse: {
-            /** Availabilityreason */
+            /**
+             * Availabilityreason
+             * @description Deprecated compatibility field; use mcpStatus.reason instead.
+             */
             availabilityReason?: string | null;
             /**
              * Availabilitystatus
+             * @description Deprecated compatibility field; use mcpStatus instead.
              * @enum {string}
              */
             availabilityStatus: "available" | "unavailable";

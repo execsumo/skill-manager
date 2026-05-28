@@ -22,6 +22,7 @@ function makeGroup(overrides: Partial<McpIdentityGroupDto> = {}): McpIdentityGro
     sightings: [
       {
         harness: "cursor",
+        recommended: true,
         label: "Cursor",
         logoKey: "cursor",
         configPath: "/c/.cursor/mcp.json",
@@ -40,6 +41,7 @@ function makeGroup(overrides: Partial<McpIdentityGroupDto> = {}): McpIdentityGro
       },
       {
         harness: "claude",
+        recommended: false,
         label: "Claude",
         logoKey: "claude",
         configPath: "/c/.claude.json",

@@ -4,7 +4,6 @@ import { AlertTriangle, Check, ChevronDown, ChevronRight, Loader2, X } from "luc
 
 import { UiTooltip } from "../../../../components/ui/UiTooltip";
 import type {
-  McpConfigChoiceDto,
   McpEnvEntryDto,
   McpServerSpecDto,
 } from "../../api/management-types";
@@ -13,7 +12,6 @@ import { maskMcpPayloadPreview } from "../../model/display-secrets";
 import {
   envChipLabel,
   formatEnvKeyPreview,
-  pickRecommendedConfigChoice,
   summarizeMcpConfig,
 } from "../../model/selectors";
 
@@ -27,6 +25,7 @@ export interface McpConfigChoiceOption {
   payloadPreview: Record<string, unknown>;
   spec: McpServerSpecDto;
   env: McpEnvEntryDto[];
+  recommended?: boolean;
 }
 
 interface McpConfigChoiceDialogProps {
@@ -50,7 +49,7 @@ export function McpConfigChoiceDialog({
 }: McpConfigChoiceDialogProps) {
   const copy = useMcpCopy();
   const recommendedId = useMemo(
-    () => pickRecommendedConfigChoice(options.map(toConfigChoiceDto)),
+    () => options.find((option) => option.recommended)?.id ?? null,
     [options],
   );
   const [chosenId, setChosenId] = useState<string>(
@@ -223,17 +222,4 @@ export function McpConfigChoiceDialog({
       </Dialog.Portal>
     </Dialog.Root>
   );
-}
-
-function toConfigChoiceDto(option: McpConfigChoiceOption): McpConfigChoiceDto {
-  return {
-    sourceKind: option.sourceKind,
-    observedHarness: option.observedHarness ?? null,
-    label: option.label,
-    logoKey: option.logoKey ?? null,
-    configPath: option.configPath ?? null,
-    payloadPreview: option.payloadPreview,
-    spec: option.spec,
-    env: option.env,
-  };
 }

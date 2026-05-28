@@ -10,7 +10,6 @@ import {
   filterMcpServersInUse,
   formatEnvKeyPreview,
   isMcpHarnessAddressable,
-  pickRecommendedSighting,
   pillCounts,
   summarizeSighting,
   urlHasEmbeddedCredential,
@@ -169,6 +168,7 @@ function makeSighting(
 ): McpIdentitySightingDto {
   return {
     harness,
+    recommended: false,
     label: harness.charAt(0).toUpperCase() + harness.slice(1),
     logoKey: harness,
     configPath: `/mock/${harness}.json`,
@@ -262,56 +262,6 @@ describe("summarizeSighting", () => {
       url: "https://mcp.example.com/m?api_key=secret",
     });
     expect(summarizeSighting(s).credentialInUrl).toBe(true);
-  });
-});
-
-describe("pickRecommendedSighting", () => {
-  it("returns null for empty input", () => {
-    expect(pickRecommendedSighting([])).toBeNull();
-  });
-
-  it("prefers stdio with env-var refs over stdio with literal", () => {
-    const envRef = makeSighting(
-      "cursor",
-      { transport: "stdio", command: "npx" },
-      [{ key: "K", value: "${env:K}", isEnvRef: true }],
-    );
-    const envLiteral = makeSighting(
-      "codex",
-      { transport: "stdio", command: "npx" },
-      [{ key: "K", value: "literal", isEnvRef: false }],
-    );
-    expect(pickRecommendedSighting([envLiteral, envRef])).toBe("cursor");
-  });
-
-  it("prefers any stdio over http", () => {
-    const stdio = makeSighting("codex", { transport: "stdio", command: "npx" });
-    const http = makeSighting("claude", {
-      transport: "http",
-      url: "https://mcp.example.com",
-    });
-    expect(pickRecommendedSighting([http, stdio])).toBe("codex");
-  });
-
-  it("prefers http without URL credential over http with URL credential", () => {
-    const dirty = makeSighting("claude", {
-      transport: "http",
-      url: "https://a.example?api_key=xyz",
-    });
-    const clean = makeSighting("cursor", { transport: "http", url: "https://b.example" });
-    expect(pickRecommendedSighting([dirty, clean])).toBe("cursor");
-  });
-
-  it("returns null when all options embed credentials in URL", () => {
-    const a = makeSighting("claude", {
-      transport: "http",
-      url: "https://a.example?api_key=xyz",
-    });
-    const b = makeSighting("cursor", {
-      transport: "http",
-      url: "https://b.example?token=xyz",
-    });
-    expect(pickRecommendedSighting([a, b])).toBeNull();
   });
 });
 

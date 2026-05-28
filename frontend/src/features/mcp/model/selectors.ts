@@ -1,6 +1,5 @@
 import type {
   McpBindingDto,
-  McpConfigChoiceDto,
   McpEnvEntryDto,
   McpIdentitySightingDto,
   McpInventoryColumnDto,
@@ -268,46 +267,4 @@ export function formatEnvKeyPreview(keys: readonly string[]): string {
 
 export function envChipLabel(count: number): string {
   return count === 1 ? "1 env var" : `${count} env vars`;
-}
-
-/**
- * Suggest a canonical harness when payloads differ.
- * Priority:
- *   1) stdio with env-var references (safest — no literal secrets anywhere)
- *   2) stdio (literal env is still safer than URL-embedded)
- *   3) remote without credential embedded in URL
- *   4) none — caller should fall back to the first sighting
- */
-export function pickRecommendedSighting(
-  sightings: readonly McpIdentitySightingDto[],
-): string | null {
-  if (sightings.length === 0) return null;
-  const hasEnvRef = (s: McpIdentitySightingDto) => (s.env ?? []).some((e) => e.isEnvRef);
-
-  const tier1 = sightings.find((s) => s.spec.transport === "stdio" && hasEnvRef(s));
-  if (tier1) return tier1.harness;
-  const tier2 = sightings.find((s) => s.spec.transport === "stdio");
-  if (tier2) return tier2.harness;
-  const tier3 = sightings.find(
-    (s) => s.spec.transport !== "stdio" && !urlHasEmbeddedCredential(s.spec.url),
-  );
-  if (tier3) return tier3.harness;
-  return null;
-}
-
-export function pickRecommendedConfigChoice(
-  choices: readonly McpConfigChoiceDto[],
-): string | null {
-  const harnessChoices = choices.filter((choice) => choice.sourceKind === "harness");
-  if (harnessChoices.length === 0) return choices[0]?.sourceKind === "managed" ? "managed" : null;
-  const hasEnvRef = (choice: McpConfigChoiceDto) => (choice.env ?? []).some((e) => e.isEnvRef);
-  const tier1 = harnessChoices.find((choice) => choice.spec.transport === "stdio" && hasEnvRef(choice));
-  if (tier1?.observedHarness) return tier1.observedHarness;
-  const tier2 = harnessChoices.find((choice) => choice.spec.transport === "stdio");
-  if (tier2?.observedHarness) return tier2.observedHarness;
-  const tier3 = harnessChoices.find(
-    (choice) => choice.spec.transport !== "stdio" && !urlHasEmbeddedCredential(choice.spec.url),
-  );
-  if (tier3?.observedHarness) return tier3.observedHarness;
-  return choices[0]?.sourceKind === "managed" ? "managed" : (harnessChoices[0]?.observedHarness ?? null);
 }
