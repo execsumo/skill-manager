@@ -12,10 +12,15 @@ from skill_manager.errors import MarketplaceUpstreamError
 from ..install_resolver import (
     McpInstallConfig,
     RegistryInstallOption,
-    registry_install_options,
     registry_managed_name,
 )
 from .client import McpRegistryClient
+from .support_policy import (
+    is_latest_active_registry_entry,
+    official_registry_meta,
+    registry_entry_server,
+    supported_registry_entry,
+)
 
 
 Fetcher = Callable[[str], dict[str, object]]
@@ -24,7 +29,6 @@ RegistrySummaryCandidate = tuple[Mapping[str, object], dict[str, object]]
 
 _REGISTRY_API_VERSION = "v0.1"
 _REGISTRY_EXTERNAL_BASE_URL = "https://registry.modelcontextprotocol.io"
-_OFFICIAL_META_KEY = "io.modelcontextprotocol.registry/official"
 _DEFAULT_PAGE_SIZE = 20
 _MAX_PAGE_SIZE = 60
 _POPULAR_TTL_SECONDS = 3600
@@ -191,14 +195,10 @@ class McpMarketplaceCatalog:
             if error.upstream_status == 404:
                 return None
             raise
-        if not _is_latest_active(raw):
+        resolved = supported_registry_entry(raw)
+        if resolved is None:
             return None
-        detail_server = _entry_server(raw)
-        if detail_server is None:
-            return None
-        options = registry_install_options(detail_server)
-        if not options:
-            return None
+        _detail_server, options = resolved
         return raw, options
 
     def _search_snapshot(
@@ -306,21 +306,15 @@ def _entries(raw: Mapping[str, object]) -> list[Mapping[str, object]]:
 
 
 def _entry_server(entry: Mapping[str, object]) -> Mapping[str, object] | None:
-    server = entry.get("server")
-    return server if isinstance(server, Mapping) else None
+    return registry_entry_server(entry)
 
 
 def _official_meta(entry: Mapping[str, object]) -> Mapping[str, object]:
-    meta = entry.get("_meta")
-    if not isinstance(meta, Mapping):
-        return {}
-    official = meta.get(_OFFICIAL_META_KEY)
-    return official if isinstance(official, Mapping) else {}
+    return official_registry_meta(entry)
 
 
 def _is_latest_active(entry: Mapping[str, object]) -> bool:
-    meta = _official_meta(entry)
-    return meta.get("status") == "active" and meta.get("isLatest") is True
+    return is_latest_active_registry_entry(entry)
 
 
 def _latest_active_entry(raw: Mapping[str, object]) -> Mapping[str, object] | None:
@@ -342,12 +336,10 @@ def _supported_latest_entries(
 ) -> list[SupportedRegistryEntry]:
     supported: list[SupportedRegistryEntry] = []
     for entry in _entries(raw):
-        server = _entry_server(entry)
-        if server is None or not _is_latest_active(entry):
+        resolved = supported_registry_entry(entry)
+        if resolved is None:
             continue
-        options = registry_install_options(server)
-        if not options:
-            continue
+        server, options = resolved
         supported.append((entry, server, options))
     return supported
 

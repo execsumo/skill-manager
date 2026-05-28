@@ -23,7 +23,7 @@ import {
   pillCounts,
   type InUsePillValue,
 } from "../model/selectors";
-import { useMcpEnableConfigGate } from "../model/use-mcp-enable-config-gate";
+import { useMcpEnableWorkflow } from "../model/use-mcp-enable-workflow";
 import { useMcpManagementController } from "../model/use-mcp-management-controller";
 import { useMcpInUseViewMode, type McpInUseViewMode } from "../model/useMcpInUseViewMode";
 
@@ -65,12 +65,14 @@ export default function McpInUsePage() {
   const common = useCommonCopy();
   const {
     requestEnable,
+    requestBulkEnable,
     pendingConfig: pendingEnableConfig,
     cancelConfig: cancelEnableConfig,
     submitConfig: submitEnableConfig,
     configError: enableConfigError,
-  } = useMcpEnableConfigGate({
+  } = useMcpEnableWorkflow({
     loadErrorMessage: copy.detail.unableToLoadInstallConfig,
+    bulkRequiresSingleMessage: copy.detail.installConfig.bulkRequiresSingle,
   });
   const viewModeOptions: readonly ViewModeOption<McpInUseViewMode>[] = useMemo(
     () => [
@@ -113,13 +115,7 @@ export default function McpInUsePage() {
     ): void => {
       const entry = findEntry(name);
       if (!entry) return;
-      requestEnable({
-        spec: entry.spec ?? null,
-        displayName: entry.displayName,
-        targetLabel,
-        installConfigStatus: entry.installConfigStatus,
-        onProceed,
-      });
+      requestEnable(entry, targetLabel, onProceed);
     },
     [findEntry, requestEnable],
   );
@@ -152,28 +148,24 @@ export default function McpInUsePage() {
 
   const handleBulkEnableAll = useCallback(async (): Promise<void> => {
     const selectedNames = Array.from(multiSelectedNames);
-    if (selectedNames.length === 1) {
-      const [name] = selectedNames;
-      handleCardSetHarnesses(name, "enabled");
-      return;
-    }
-    const blocked = selectedNames
+    const selectedEntries = selectedNames
       .map((name) => findEntry(name))
-      .find((entry): entry is McpInventoryEntryDto =>
-        Boolean(entry?.installConfigStatus.missingRequired.length),
-      ) ?? null;
-    if (blocked) {
-      setPageActionErrorMessage(copy.detail.installConfig.bulkRequiresSingle(blocked.displayName));
-      return;
-    }
-    setPageActionErrorMessage("");
-    await handleMultiSelectEnableAll();
+      .filter((entry): entry is McpInventoryEntryDto => Boolean(entry));
+    await requestBulkEnable(
+      selectedEntries,
+      (entry) => handleCardSetHarnesses(entry.name, "enabled"),
+      async () => {
+        setPageActionErrorMessage("");
+        await handleMultiSelectEnableAll();
+      },
+      setPageActionErrorMessage,
+    );
   }, [
-    copy.detail.installConfig,
     findEntry,
     handleCardSetHarnesses,
     handleMultiSelectEnableAll,
     multiSelectedNames,
+    requestBulkEnable,
   ]);
 
   const dismissVisibleActionError = useCallback(() => {

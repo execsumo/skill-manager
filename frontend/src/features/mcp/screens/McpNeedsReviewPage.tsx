@@ -198,7 +198,7 @@ export default function McpNeedsReviewPage() {
 
 function optionsForGroup(group: McpIdentityGroupDto): McpConfigChoiceOption[] {
   return group.sightings.map((sighting) => ({
-    id: sighting.harness,
+    id: `harness:${sighting.harness}`,
     sourceKind: "harness",
     observedHarness: sighting.harness,
     label: sighting.label,
@@ -207,5 +207,6 @@ function optionsForGroup(group: McpIdentityGroupDto): McpConfigChoiceOption[] {
     payloadPreview: sighting.payloadPreview,
     spec: sighting.spec,
     env: sighting.env ?? [],
+    recommended: sighting.recommended,
   }));
 }

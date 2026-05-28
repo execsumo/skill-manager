@@ -10,9 +10,11 @@ from .availability import (
     McpAvailabilityProbe,
     availability_cache_key,
 )
+from .config_choice import observed_spec_from_scans
 from .enrichment import McpEnrichmentService
-from .install_resolver import resolve_registry_server_spec
-from .install_state import resolve_enable_spec
+from .harness_application import McpHarnessApplication
+from .install_intent import ManagedMcpRecord, registry_record_from_detail
+from .install_state import resolve_enable_managed_spec
 from .marketplace.catalog import McpMarketplaceCatalog
 from .planner import McpAdoptionPlanner
 from .read_models import McpReadModelService
@@ -45,6 +47,7 @@ class McpMutationService:
         self.enrichment = enrichment
         self.availability_probe = availability_probe or McpAvailabilityProbe()
         self._availability_cache = availability_cache if availability_cache is not None else {}
+        self.harness_application = McpHarnessApplication(read_models)
 
     # Install / uninstall ---------------------------------------------------
 
@@ -64,17 +67,18 @@ class McpMutationService:
         detail = self._marketplace_install_detail(qualified_name)
         if detail is None:
             raise MutationError(f"server not found in marketplace: {qualified_name}", status=404)
-        source_spec = resolve_registry_server_spec(
+        source_record = registry_record_from_detail(
             detail,
             allow_missing_required=True,
         )
-        if self.store.get_managed(source_spec.name) is not None:
+        if self.store.get_managed(source_record.spec.name) is not None:
             raise MutationError(
-                f"a server named '{source_spec.name}' is already installed",
+                f"a server named '{source_record.spec.name}' is already installed",
                 status=409,
             )
 
-        stored = self.store.upsert_from_spec(source_spec)
+        stored_record = self.store.upsert_record(source_record)
+        stored = stored_record.spec
         self.read_models.invalidate()
         self._availability_cache[availability_cache_key(stored.name, stored)] = (
             self.availability_probe.probe(stored)
@@ -85,25 +89,11 @@ class McpMutationService:
         if self.store.get_managed(name) is None:
             raise MutationError(f"unknown server: {name}", status=404)
         bound_harnesses = self._harnesses_in_states(name, {"managed", "drifted"})
-        succeeded: list[str] = []
-        failures: list[dict[str, str]] = []
-        for adapter in self.read_models.enabled_adapters():
-            if adapter.harness not in bound_harnesses:
-                continue
-            try:
-                adapter.disable_server(name)
-                succeeded.append(adapter.harness)
-            except Exception as error:  # noqa: BLE001
-                failures.append({"harness": adapter.harness, "error": str(error)})
-        if not failures:
-            self.store.remove(name)
-        if succeeded or not failures:
-            self.read_models.invalidate()
-        return {
-            "ok": not failures,
-            "succeeded": succeeded,
-            "failed": failures,
-        }
+        return self.harness_application.disable_many(
+            name,
+            bound_harnesses,
+            remove_after_full_success=lambda: self.store.remove(name),
+        ).to_dict()
 
     # Per-harness toggle ----------------------------------------------------
 
@@ -114,15 +104,18 @@ class McpMutationService:
         *,
         config: dict[str, object] | None = None,
     ) -> dict[str, bool]:
-        spec = self._require_server(name)
+        record = self._require_record(name)
         adapter = self.read_models.require_enabled_adapter(harness)
         if adapter.has_binding(name):
             return {"ok": True}
-        binding_spec = self._binding_spec_for_enable(spec, config=config)
-        adapter.enable_server(binding_spec)
-        if binding_spec != spec:
-            self.store.upsert_from_spec(binding_spec)
-        self.read_models.invalidate()
+        binding_record = self._record_for_enable(record, config=config)
+        result = self.harness_application.enable_one(
+            adapter,
+            binding_record.spec,
+            commit=(lambda: self.store.upsert_record(binding_record)) if binding_record != record else None,
+        )
+        if result.failed:
+            raise MutationError(result.failed[0]["error"], status=400)
         return {"ok": True}
 
     def disable_server(self, name: str, harness: str) -> dict[str, bool]:
@@ -142,59 +135,36 @@ class McpMutationService:
     ) -> dict[str, object]:
         if target not in ("enabled", "disabled"):
             raise MutationError("target must be 'enabled' or 'disabled'", status=400)
-        spec = self._require_server(name)
-        binding_spec = self._binding_spec_for_enable(spec, config=config) if target == "enabled" else spec
+        record = self._require_record(name)
+        binding_record = self._record_for_enable(record, config=config) if target == "enabled" else record
 
         bound_now = self._harnesses_in_states(name, {"managed", "drifted"})
+        if target == "enabled":
+            return self.harness_application.enable_many(
+                binding_record.spec,
+                self.read_models.enabled_harnesses(),
+                writable_only=True,
+                skip_harnesses=bound_now,
+                commit=(lambda: self.store.upsert_record(binding_record)) if binding_record != record else None,
+            ).to_dict()
+        return self.harness_application.disable_many(
+            name,
+            bound_now,
+            addressable_only=True,
+        ).to_dict()
 
-        succeeded: list[str] = []
-        failures: list[dict[str, str]] = []
-        flipped_any = False
-
-        adapters = (
-            self.read_models.enabled_writable_adapters()
-            if target == "enabled"
-            else self.read_models.enabled_addressable_adapters()
-        )
-        for adapter in adapters:
-            if target == "enabled" and adapter.harness in bound_now:
-                continue
-            if target == "disabled" and adapter.harness not in bound_now:
-                continue
-            try:
-                if target == "enabled":
-                    adapter.enable_server(binding_spec)
-                else:
-                    adapter.disable_server(name)
-            except Exception as error:  # noqa: BLE001
-                failures.append({"harness": adapter.harness, "error": str(error)})
-                continue
-            succeeded.append(adapter.harness)
-            flipped_any = True
-
-        if flipped_any:
-            if target == "enabled" and binding_spec != spec:
-                self.store.upsert_from_spec(binding_spec)
-            self.read_models.invalidate()
-
-        return {
-            "ok": not failures,
-            "succeeded": succeeded,
-            "failed": failures,
-        }
-
-    def _binding_spec_for_enable(
+    def _record_for_enable(
         self,
-        spec: McpServerSpec,
+        record: ManagedMcpRecord,
         *,
         config: dict[str, object] | None,
-    ) -> McpServerSpec:
-        if spec.source.kind != "marketplace":
-            return spec
-        detail = self._marketplace_install_detail(spec.source.locator)
+    ) -> ManagedMcpRecord:
+        if record.spec.source.kind != "marketplace":
+            return record
+        detail = self._marketplace_install_detail(record.spec.source.locator)
         if detail is None:
-            raise MutationError(f"server not found in marketplace: {spec.source.locator}", status=404)
-        return resolve_enable_spec(detail, spec, config=config)
+            raise MutationError(f"server not found in marketplace: {record.spec.source.locator}", status=404)
+        return resolve_enable_managed_spec(detail, record, config=config)
 
     # Reconciliation -------------------------------------------------------
 
@@ -213,9 +183,10 @@ class McpMutationService:
             if harnesses is not None
             else self._harnesses_in_states(name, {"managed", "drifted"}, addressable_only=True)
         )
-        current = self._require_server(name)
+        current_record = self._require_record(name)
+        current = current_record.spec
         if source_kind == "managed":
-            source_spec = current
+            source_record = current_record
         elif source_kind == "harness":
             if not observed_harness:
                 raise MutationError("observedHarness is required when sourceKind is 'harness'", status=400)
@@ -226,22 +197,21 @@ class McpMutationService:
                 display_name=current.display_name,
                 source=current.source,
             )
-            self.store.upsert_from_spec(source_spec)
-            self.read_models.invalidate()
-            source_spec = self._require_server(name)
+            source_record = ManagedMcpRecord(spec=source_spec)
         else:
             raise MutationError("sourceKind must be 'managed' or 'harness'", status=400)
 
-        stored = self.store.get_public_spec(name) or source_spec
-        binding_spec = self.store.get_binding_spec(name) or source_spec
-        succeeded, failures = self._write_spec_to_harnesses(binding_spec, target_harnesses)
-        if succeeded:
-            self.read_models.invalidate()
+        result = self.harness_application.enable_many(
+            source_record.spec,
+            target_harnesses,
+            commit=(lambda: self.store.upsert_record(source_record)) if source_record != current_record else None,
+        )
+        stored = self.store.get_public_spec(name) or source_record.spec
         return {
-            "ok": not failures,
+            "ok": result.ok,
             "server": redacted_spec_dict(stored),
-            "succeeded": succeeded,
-            "failed": failures,
+            "succeeded": result.succeeded,
+            "failed": result.failed,
         }
 
     # Adoption -------------------------------------------------------------
@@ -292,23 +262,19 @@ class McpMutationService:
         target_spec = self._apply_enrichment(target_spec)
 
         target_harnesses = set(harnesses) if harnesses else {s.harness for s in group.sightings}
-        stored = self.store.upsert_from_spec(target_spec)
-        stored_binding_spec = self.store.get_binding_spec(stored.name)
-        if stored_binding_spec is None:
-            raise MutationError(f"unknown server: {name}", status=404)
-
-        succeeded, failures = self._write_spec_to_harnesses(
-            stored_binding_spec,
+        target_record = ManagedMcpRecord(spec=target_spec)
+        result = self.harness_application.enable_many(
+            target_record.spec,
             target_harnesses,
+            commit=lambda: self.store.upsert_record(target_record),
         )
 
-        self.read_models.invalidate()
-        response_spec = self.store.get_public_spec(stored.name) or stored_binding_spec
+        response_spec = self.store.get_public_spec(target_spec.name) or target_spec
         return {
-            "ok": not failures,
+            "ok": result.ok,
             "server": redacted_spec_dict(response_spec),
-            "succeeded": succeeded,
-            "failed": failures,
+            "succeeded": result.succeeded,
+            "failed": result.failed,
         }
 
     # Internal helpers -----------------------------------------------------
@@ -347,44 +313,19 @@ class McpMutationService:
 
     def _observed_spec(self, name: str, harness: str) -> McpServerSpec:
         snapshot = self.read_models.snapshot()
-        for scan in snapshot.harness_scans:
-            if scan.harness != harness:
-                continue
-            for entry in scan.entries:
-                if entry.name != name:
-                    continue
-                if entry.parsed_spec is None:
-                    raise MutationError(
-                        entry.parse_issue or f"unable to parse '{name}' in {harness}",
-                        status=409,
-                    )
-                return entry.parsed_spec
-        raise MutationError(f"server '{name}' was not observed in harness '{harness}'", status=404)
-
-    def _write_spec_to_harnesses(
-        self,
-        spec: McpServerSpec,
-        harnesses: Iterable[str],
-    ) -> tuple[list[str], list[dict[str, str]]]:
-        targets = set(harnesses)
-        succeeded: list[str] = []
-        failures: list[dict[str, str]] = []
-        for adapter in self.read_models.enabled_adapters():
-            if adapter.harness not in targets:
-                continue
-            try:
-                adapter.enable_server(spec)
-            except Exception as error:  # noqa: BLE001
-                failures.append({"harness": adapter.harness, "error": str(error)})
-                continue
-            succeeded.append(adapter.harness)
-        return succeeded, failures
+        return observed_spec_from_scans(name, harness, snapshot.harness_scans)
 
     def _require_server(self, name: str) -> McpServerSpec:
         spec = self.store.get_binding_spec(name)
         if spec is None:
             raise MutationError(f"unknown server: {name}", status=404)
         return spec
+
+    def _require_record(self, name: str) -> ManagedMcpRecord:
+        record = self.store.get_record(name)
+        if record is None:
+            raise MutationError(f"unknown server: {name}", status=404)
+        return record
 
     def _managed_for_marketplace(self, qualified_name: str) -> McpServerSpec | None:
         for server in self.store.list_managed():

@@ -5,14 +5,18 @@ import json
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Literal, Mapping
+from typing import TYPE_CHECKING, Literal, Mapping
 
 from skill_manager.atomic_files import atomic_write_text, file_lock
 
 
 McpTransport = Literal["stdio", "http", "sse"]
 McpSourceKind = Literal["marketplace", "adopted", "manual"]
-CURRENT_MCP_MANIFEST_VERSION = 5
+if TYPE_CHECKING:
+    from .install_intent import ManagedMcpRecord
+
+
+CURRENT_MCP_MANIFEST_VERSION = 6
 
 
 @dataclass(frozen=True)
@@ -120,7 +124,7 @@ class McpServerSpec:
 
 @dataclass(frozen=True)
 class McpManagedManifest:
-    entries: tuple[McpServerSpec, ...] = field(default_factory=tuple)
+    entries: tuple["ManagedMcpRecord", ...] = field(default_factory=tuple)
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -182,6 +186,9 @@ class McpServerStore:
         return self.manifest_path.with_suffix(".lock")
 
     def list_managed(self) -> tuple[McpServerSpec, ...]:
+        return tuple(record.spec for record in self.list_records())
+
+    def list_records(self) -> tuple["ManagedMcpRecord", ...]:
         return self._load_manifest_result().manifest.entries
 
     def list_binding_specs(self) -> tuple[McpServerSpec, ...]:
@@ -191,9 +198,13 @@ class McpServerStore:
         return self.list_managed()
 
     def get_managed(self, name: str) -> McpServerSpec | None:
-        for entry in self.list_managed():
-            if entry.name == name:
-                return entry
+        record = self.get_record(name)
+        return record.spec if record is not None else None
+
+    def get_record(self, name: str) -> "ManagedMcpRecord | None":
+        for record in self.list_records():
+            if record.spec.name == name:
+                return record
         return None
 
     def get_binding_spec(self, name: str) -> McpServerSpec | None:
@@ -205,14 +216,23 @@ class McpServerStore:
     def upsert_from_spec(self, spec: McpServerSpec) -> McpServerSpec:
         return self.upsert_managed(spec)
 
+    def upsert_record(self, record: "ManagedMcpRecord") -> "ManagedMcpRecord":
+        return self._upsert_record(record)
+
     def upsert_managed(self, server: McpServerSpec) -> McpServerSpec:
+        existing = self.get_record(server.name)
+        record = self._record_from_spec(server, install_intent=existing.install_intent if existing else None)
+        return self._upsert_record(record).spec
+
+    def _upsert_record(self, record: "ManagedMcpRecord") -> "ManagedMcpRecord":
         with file_lock(self._lock_path):
             manifest = self._load_manifest_result().manifest
-            stamped = prepare_managed_spec(server)
+            stamped_spec = prepare_managed_spec(record.spec)
+            stamped = self._record_from_spec(stamped_spec, install_intent=record.install_intent)
             new_entries = tuple(
-                stamped if entry.name == stamped.name else entry for entry in manifest.entries
+                stamped if entry.spec.name == stamped.spec.name else entry for entry in manifest.entries
             )
-            if not any(entry.name == stamped.name for entry in manifest.entries):
+            if not any(entry.spec.name == stamped.spec.name for entry in manifest.entries):
                 new_entries = manifest.entries + (stamped,)
             write_mcp_manifest(self.manifest_path, McpManagedManifest(entries=new_entries))
             return stamped
@@ -220,7 +240,7 @@ class McpServerStore:
     def remove(self, name: str) -> bool:
         with file_lock(self._lock_path):
             manifest = self._load_manifest_result().manifest
-            new_entries = tuple(entry for entry in manifest.entries if entry.name != name)
+            new_entries = tuple(entry for entry in manifest.entries if entry.spec.name != name)
             if len(new_entries) == len(manifest.entries):
                 return False
             write_mcp_manifest(self.manifest_path, McpManagedManifest(entries=new_entries))
@@ -239,7 +259,7 @@ class McpServerStore:
                 McpManagedManifest(),
                 issues=(McpManifestIssue(name="<manifest>", reason="'servers' must be a list"),),
             )
-        entries: list[McpServerSpec] = []
+        records = []
         issues: list[McpManifestIssue] = []
         for item in raw_entries:
             if not isinstance(item, dict):
@@ -247,14 +267,31 @@ class McpServerStore:
                 continue
             name = str(item.get("name", "<unknown>"))
             try:
-                entries.append(McpServerSpec.from_dict(item))
+                record = self._record_from_dict(item)
+                records.append(record)
             except (KeyError, TypeError, ValueError) as error:
                 issues.append(McpManifestIssue(name=name, reason=str(error) or error.__class__.__name__))
                 continue
         return _ManifestLoadResult(
-            McpManagedManifest(entries=tuple(entries)),
+            McpManagedManifest(entries=tuple(records)),
             issues=tuple(issues),
         )
+
+    @staticmethod
+    def _record_from_dict(payload: Mapping[str, object]) -> "ManagedMcpRecord":
+        from .install_intent import ManagedMcpRecord
+
+        return ManagedMcpRecord.from_dict(payload)
+
+    @staticmethod
+    def _record_from_spec(
+        spec: McpServerSpec,
+        *,
+        install_intent,
+    ) -> "ManagedMcpRecord":
+        from .install_intent import ManagedMcpRecord
+
+        return ManagedMcpRecord(spec=spec, install_intent=install_intent)
 
 
 __all__ = [

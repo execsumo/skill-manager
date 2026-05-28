@@ -900,6 +900,10 @@
             "title": "Env",
             "type": "array"
           },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
           "label": {
             "title": "Label",
             "type": "string"
@@ -931,6 +935,11 @@
             "title": "Payloadpreview",
             "type": "object"
           },
+          "recommended": {
+            "default": false,
+            "title": "Recommended",
+            "type": "boolean"
+          },
           "sourceKind": {
             "enum": [
               "managed",
@@ -944,6 +953,7 @@
           }
         },
         "required": [
+          "id",
           "sourceKind",
           "label",
           "payloadPreview",
@@ -1070,6 +1080,11 @@
             "additionalProperties": true,
             "title": "Payloadpreview",
             "type": "object"
+          },
+          "recommended": {
+            "default": false,
+            "title": "Recommended",
+            "type": "boolean"
           },
           "spec": {
             "$ref": "#/components/schemas/McpServerSpecResponse"
@@ -1281,9 +1296,11 @@
                 "type": "null"
               }
             ],
+            "description": "Deprecated compatibility field; use mcpStatus.reason instead.",
             "title": "Availabilityreason"
           },
           "availabilityStatus": {
+            "description": "Deprecated compatibility field; use mcpStatus instead.",
             "enum": [
               "available",
               "unavailable"
@@ -2114,9 +2131,11 @@
                 "type": "null"
               }
             ],
+            "description": "Deprecated compatibility field; use mcpStatus.reason instead.",
             "title": "Availabilityreason"
           },
           "availabilityStatus": {
+            "description": "Deprecated compatibility field; use mcpStatus instead.",
             "enum": [
               "available",
               "unavailable"

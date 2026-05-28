@@ -17,7 +17,7 @@ import { formatDisplayHeaders } from "../../model/display-secrets";
 import type { McpInstallConfigValues } from "../../model/install-config";
 import { mcpStatusReason } from "../../model/mcp-status";
 import { mcpServerSourceLinks, resolveMcpRegistryName } from "../../model/mcp-source-links";
-import { useMcpEnableConfigGate } from "../../model/use-mcp-enable-config-gate";
+import { useMcpEnableWorkflow } from "../../model/use-mcp-enable-workflow";
 import { McpInstallConfigDialog } from "../config/McpInstallConfigDialog";
 import {
   McpConfigChoiceDialog,
@@ -74,7 +74,7 @@ export function McpServerDetailView({
     cancelConfig: cancelEnableConfig,
     submitConfig: submitEnableConfig,
     configError: enableConfigError,
-  } = useMcpEnableConfigGate({
+  } = useMcpEnableWorkflow({
     loadErrorMessage: copy.detail.unableToLoadInstallConfig,
   });
 
@@ -221,20 +221,15 @@ export function McpServerDetailView({
                 canEnable={detail.canEnable}
                 serverPending={isServerPending}
                 pendingPerHarness={pendingPerHarness}
-                onEnable={(harness) =>
-                  requestEnable({
-                    spec,
-                    displayName,
-                    targetLabel: harness,
-                    installConfigStatus: detail.installConfigStatus,
-                    onProceed: (config) => {
-                      if (config === undefined) {
-                        onEnableHarness(harness);
-                        return;
-                      }
-                      onEnableHarness(harness, config);
-                    },
-                  })}
+                onEnable={(harness) => {
+                  requestEnable(detail, harness, (config) => {
+                    if (config === undefined) {
+                      onEnableHarness(harness);
+                      return;
+                    }
+                    onEnableHarness(harness, config);
+                  });
+                }}
                 onDisable={onDisableHarness}
                 onResolveConfigClick={() => setResolveDialogOpen(true)}
                 canResolveConfig={canResolveConfig}
@@ -296,7 +291,7 @@ export function McpServerDetailView({
 
 function configChoiceToOption(choice: McpConfigChoiceDto, copy: McpCopy): McpConfigChoiceOption {
   return {
-    id: choice.sourceKind === "managed" ? "managed" : (choice.observedHarness ?? choice.label),
+    id: choice.id,
     sourceKind: choice.sourceKind,
     observedHarness: choice.observedHarness,
     label: choice.sourceKind === "managed" ? copy.detail.skillManagerConfig : choice.label,
@@ -305,6 +300,7 @@ function configChoiceToOption(choice: McpConfigChoiceDto, copy: McpCopy): McpCon
     payloadPreview: choice.payloadPreview,
     spec: choice.spec,
     env: choice.env ?? [],
+    recommended: choice.recommended,
   };
 }
 

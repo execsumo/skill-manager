@@ -488,7 +488,7 @@ class McpRoutesTests(unittest.TestCase):
             self.assertEqual(install["server"]["url"], "https://mcp.exa.ai")
             self.assertFalse((harness.spec.home / ".cursor" / "mcp.json").exists())
 
-    def test_install_defers_required_registry_environment_config(self) -> None:
+    def test_install_stores_required_registry_environment_config_without_harness_write(self) -> None:
         registry_server = {
             "name": "ai.cueapi/mcp",
             "title": "CueAPI",
@@ -516,6 +516,13 @@ class McpRoutesTests(unittest.TestCase):
             self.assertTrue(install["ok"])
             self.assertEqual(probe.probed, ["ai-cueapi-mcp"])
             self.assertIsNotNone(harness.container.mcp_store.get_managed("ai-cueapi-mcp"))
+            record = harness.container.mcp_store.get_record("ai-cueapi-mcp")
+            self.assertIsNotNone(record)
+            assert record is not None
+            self.assertIsNotNone(record.install_intent)
+            assert record.install_intent is not None
+            self.assertEqual(record.install_intent.option_key, "package:npm:@cueapi/mcp:0.1.3")
+            self.assertEqual(record.install_intent.values_dict(), {})
             self.assertFalse((harness.spec.home / ".cursor" / "mcp.json").exists())
             detail = harness.get_json("/api/mcp/servers/ai-cueapi-mcp")
             self.assertEqual(detail["installConfigStatus"]["hasFields"], True)
@@ -567,6 +574,18 @@ class McpRoutesTests(unittest.TestCase):
             detail = harness.get_json("/api/mcp/servers/ai-cueapi-mcp")
             self.assertEqual(detail["installConfigStatus"]["missingRequired"], [])
             self.assertEqual(detail["installConfigStatus"]["configured"], True)
+            record = harness.container.mcp_store.get_record("ai-cueapi-mcp")
+            self.assertIsNotNone(record)
+            assert record is not None
+            self.assertIsNotNone(record.install_intent)
+            assert record.install_intent is not None
+            self.assertEqual(
+                record.install_intent.values_dict(),
+                {
+                    "CUEAPI_API_KEY": "cue-key",
+                    "CUEAPI_BASE_URL": "https://api.cueapi.ai",
+                },
+            )
 
             harness.post_json(
                 "/api/mcp/servers/ai-cueapi-mcp/enable",
@@ -699,6 +718,12 @@ class McpRoutesTests(unittest.TestCase):
             self.assertIsNotNone(managed)
             assert managed is not None
             self.assertNotIn("CUEAPI_API_KEY", managed.env_dict())
+            record = harness.container.mcp_store.get_record("ai-cueapi-mcp")
+            self.assertIsNotNone(record)
+            assert record is not None
+            self.assertIsNotNone(record.install_intent)
+            assert record.install_intent is not None
+            self.assertNotIn("CUEAPI_API_KEY", record.install_intent.values_dict())
 
     def test_enable_all_with_config_updates_manifest_after_partial_success(self) -> None:
         registry_server = {
@@ -740,6 +765,12 @@ class McpRoutesTests(unittest.TestCase):
             self.assertIsNotNone(managed)
             assert managed is not None
             self.assertEqual(managed.env_dict()["CUEAPI_API_KEY"], "cue-key")
+            record = harness.container.mcp_store.get_record("ai-cueapi-mcp")
+            self.assertIsNotNone(record)
+            assert record is not None
+            self.assertIsNotNone(record.install_intent)
+            assert record.install_intent is not None
+            self.assertEqual(record.install_intent.values_dict()["CUEAPI_API_KEY"], "cue-key")
 
     def test_enable_all_with_config_leaves_manifest_when_every_write_fails(self) -> None:
         registry_server = {
@@ -780,6 +811,12 @@ class McpRoutesTests(unittest.TestCase):
             self.assertIsNotNone(managed)
             assert managed is not None
             self.assertNotIn("CUEAPI_API_KEY", managed.env_dict())
+            record = harness.container.mcp_store.get_record("ai-cueapi-mcp")
+            self.assertIsNotNone(record)
+            assert record is not None
+            self.assertIsNotNone(record.install_intent)
+            assert record.install_intent is not None
+            self.assertNotIn("CUEAPI_API_KEY", record.install_intent.values_dict())
 
     def test_optional_config_is_preserved_when_enabling_another_harness(self) -> None:
         registry_server = {
@@ -826,6 +863,12 @@ class McpRoutesTests(unittest.TestCase):
             self.assertIsNotNone(managed_after)
             assert managed_after is not None
             self.assertEqual(managed_after.env_dict()["OPTIONAL_TOKEN"], "opt-token")
+            record_after = harness.container.mcp_store.get_record("ai-optional-mcp")
+            self.assertIsNotNone(record_after)
+            assert record_after is not None
+            self.assertIsNotNone(record_after.install_intent)
+            assert record_after.install_intent is not None
+            self.assertEqual(record_after.install_intent.values_dict()["OPTIONAL_TOKEN"], "opt-token")
             claude_cfg = json.loads((harness.spec.home / ".claude.json").read_text())
             self.assertEqual(
                 claude_cfg["mcpServers"]["ai-optional-mcp"]["env"],
