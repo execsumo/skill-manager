@@ -247,6 +247,7 @@ export default function SkillsInUsePage() {
                 checkedRefs={multiSelectedRefs}
                 onOpenSkill={onOpenSkill}
                 onToggleChecked={onToggleMultiSelect}
+                onToggleHarness={onToggleCell}
                 onSetAllHarnesses={onSetSkillAllHarnesses}
                 onRequestRemove={(row) => requestSkillConfirm("unmanage", row)}
                 onRequestDelete={(row) => requestSkillConfirm("delete", row)}
