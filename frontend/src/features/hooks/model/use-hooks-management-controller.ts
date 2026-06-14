@@ -126,7 +126,7 @@ export function useHooksManagementController() {
       id: string;
       event: string;
       command: string;
-      matcher?: string | null;
+      match?: string | null;
       timeout?: number | null;
       description?: string;
     }): Promise<void> => {

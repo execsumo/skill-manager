@@ -47,7 +47,7 @@ const englishHooksCopy = {
     skillManagerConfig: "Skill Manager config",
     event: "Event",
     command: "Command",
-    matcher: "Matcher",
+    match: "Tool Category",
     timeout: "Timeout (seconds)",
     openDetail: (id: string) => `Open detail for ${id}`,
     moreActions: (id: string) => `More actions for ${id}`,

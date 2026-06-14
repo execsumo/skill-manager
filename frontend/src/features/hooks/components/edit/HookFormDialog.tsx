@@ -3,43 +3,19 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { Loader2, X } from "lucide-react";
 
 const SUPPORTED_EVENTS = [
-  "SessionStart",
-  "Setup",
-  "InstructionsLoaded",
-  "UserPromptSubmit",
-  "UserPromptExpansion",
-  "MessageDisplay",
-  "PreToolUse",
-  "PermissionRequest",
-  "PostToolUse",
-  "PostToolUseFailure",
-  "PostToolBatch",
-  "PermissionDenied",
-  "Notification",
-  "SubagentStart",
-  "SubagentStop",
-  "TaskCreated",
-  "TaskCompleted",
-  "Stop",
-  "StopFailure",
-  "TeammateIdle",
-  "ConfigChange",
-  "CwdChanged",
-  "FileChanged",
-  "WorktreeCreate",
-  "WorktreeRemove",
-  "PreCompact",
-  "PostCompact",
-  "SessionEnd",
-  "Elicitation",
-  "ElicitationResult",
+  "pre_tool_use",
+  "post_tool_use",
+  "user_prompt_submit",
+  "session_start",
+  "stop",
+  "pre_compact",
 ];
 
 interface HookFormValue {
   id: string;
   event: string;
   command: string;
-  matcher: string | null;
+  match: string | null;
   timeout: number | null;
   description: string;
 }
@@ -58,23 +34,24 @@ export function HookFormDialog({
   onSubmit,
 }: HookFormDialogProps) {
   const [id, setId] = useState("");
-  const [event, setEvent] = useState("PreToolUse");
+  const [event, setEvent] = useState("pre_tool_use");
   const [command, setCommand] = useState("");
-  const [matcher, setMatcher] = useState("");
+  const [match, setMatch] = useState("any");
   const [timeoutStr, setTimeoutStr] = useState("");
   const [description, setDescription] = useState("");
 
   useEffect(() => {
     if (!open) return;
     setId("");
-    setEvent("PreToolUse");
+    setEvent("pre_tool_use");
     setCommand("");
-    setMatcher("");
+    setMatch("any");
     setTimeoutStr("");
     setDescription("");
   }, [open]);
 
   const canSubmit = id.trim() && event.trim() && command.trim();
+  const showMatchSelector = event === "pre_tool_use" || event === "post_tool_use";
 
   async function handleSubmit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
@@ -84,7 +61,7 @@ export function HookFormDialog({
       id: id.trim(),
       event,
       command: command.trim(),
-      matcher: matcher.trim() || null,
+      match: showMatchSelector ? match : null,
       timeout: isNaN(Number(timeoutVal)) ? null : timeoutVal,
       description: description.trim(),
     });
@@ -93,9 +70,7 @@ export function HookFormDialog({
   return (
     <Dialog.Root
       open={open}
-      onOpenChange={(nextOpen) => {
-        if (!pending) onOpenChange(nextOpen);
-      }}
+      onOpenChange={onOpenChange}
     >
       <Dialog.Portal>
         <Dialog.Overlay className="dialog-overlay" />
@@ -110,7 +85,7 @@ export function HookFormDialog({
           </div>
 
           <div id="hook-form-dialog-desc" style={{ display: "none" }}>
-            Add a new hook configurations that will run command on specified life cycle event.
+            Add a new hook configuration that will run a command on the specified lifecycle event.
           </div>
 
           <form onSubmit={handleSubmit} className="dialog-form">
@@ -145,17 +120,24 @@ export function HookFormDialog({
                 </select>
               </label>
 
-              <label className="form-field">
-                <span className="form-field__label">Matcher (optional, e.g. command tool name regex)</span>
-                <input
-                  type="text"
-                  className="form-field__input"
-                  placeholder="e.g. Bash"
-                  value={matcher}
-                  onChange={(e) => setMatcher(e.target.value)}
-                  disabled={pending}
-                />
-              </label>
+              {showMatchSelector ? (
+                <label className="form-field">
+                  <span className="form-field__label">Tool Category</span>
+                  <select
+                    className="form-field__select"
+                    value={match}
+                    onChange={(e) => setMatch(e.target.value)}
+                    disabled={pending}
+                  >
+                    <option value="any">any</option>
+                    <option value="shell">shell</option>
+                    <option value="file_read">file_read</option>
+                    <option value="file_write">file_write</option>
+                    <option value="mcp">mcp</option>
+                    <option value="web">web</option>
+                  </select>
+                </label>
+              ) : null}
 
               <label className="form-field">
                 <span className="form-field__label">Command *</span>
