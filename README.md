@@ -164,6 +164,11 @@ The npm wrapper downloads the native release artifact for the current platform a
       <strong>OpenClaw</strong><br />
       <a href="https://docs.openclaw.ai/start/getting-started">Docs</a>
     </td>
+    <td align="center" valign="middle">
+      <img src="assets/harness-logos/agy-logo.svg" alt="Antigravity CLI" height="56" /><br />
+      <strong>Antigravity (agy)</strong><br />
+      <a href="https://antigravity.google">Docs</a>
+    </td>
   </tr>
 </table>
 
@@ -174,6 +179,7 @@ The npm wrapper downloads the native release artifact for the current platform a
 | Cursor | Yes | Yes | Yes |
 | OpenCode | Yes | Yes | Yes |
 | OpenClaw | Yes | Not Yet | Not Yet |
+| Antigravity (agy) | Yes | Yes | Not Yet |
 
 ## Local-first safety
 
@@ -218,6 +224,7 @@ MCP servers are stored as normalized Skill Manager records, then translated into
 - Codex uses TOML under `mcp_servers`.
 - Claude Code and Cursor use `mcpServers` JSON entries.
 - OpenCode uses typed local/remote MCP entries.
+- Antigravity (agy) uses `mcpServers` JSON entries with `serverUrl` for HTTP transports and `command`/`args`/`env` for stdio.
 - OpenClaw MCP writes are not yet supported.
 
 When Skill Manager finds different configs for the same MCP server, it asks you to resolve the source of truth first.
@@ -232,7 +239,7 @@ Slash commands are stored as TOML records under Skill Manager app storage, then 
 - Claude Code writes Markdown command files under `~/.claude/commands` and invokes them with `/`.
 - Cursor writes plain text command files under `~/.cursor/commands` and invokes them with `/`.
 - Codex writes prompt files under `~/.codex/prompts` and invokes them with `/prompts:`.
-- OpenClaw slash command writes are not yet supported.
+- OpenClaw and Antigravity (agy) slash command writes are not yet supported.
 
 Skill Manager tracks target ownership with sync state and content hashes. It will not overwrite an untracked command file automatically, and it reports managed files as changed or missing when the target no longer matches the last synced hash. Review actions let you adopt unmanaged commands, restore managed content, adopt a changed harness command as the new source, or remove a broken binding while leaving the harness file untouched.
 
@@ -273,6 +280,7 @@ Most users do not need to change these locations. If you manage skills in a cust
 | Cursor | `SKILL_MANAGER_CURSOR_ROOT` | `~/.cursor/skills` |
 | OpenCode | `SKILL_MANAGER_OPENCODE_ROOT` | `~/.config/opencode/skills` |
 | OpenClaw | `n/a` | `~/.openclaw/skills` |
+| Antigravity (agy) | `SKILL_MANAGER_AGY_ROOT` | `~/.gemini/antigravity-cli/skills` |
 
 MCP config locations are harness-owned. Skill Manager writes only to verified config paths and skips unsupported harness writes.
 
