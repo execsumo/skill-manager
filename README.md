@@ -8,7 +8,7 @@
 
 <p align="center">
   <strong>A local-first control center for AI extensions.</strong><br />
-  Use, review, scan, and discover Skills, MCP servers, slash commands, and CLI tools across agent harnesses.
+  Use, review, scan, and discover Skills, MCP servers, slash commands, hooks, and CLI tools across agent harnesses.
 </p>
 
 <p align="center">
@@ -40,6 +40,7 @@ AI extensions are scattered across harness-specific folders, MCP config files, s
 - Scan Skills with a saved LLM provider configuration and review findings before use.
 - Install or adopt MCP server configs, resolve differences, and enable them where supported.
 - Manage reusable slash commands once, then sync them to supported harnesses.
+- Manage hooks as normalized records, then sync them into supported harness settings with drift detection and review for unmanaged entries.
 - Discover Skills, MCP servers, and preview-only CLI tools from marketplace sources.
 
 ## Product tour
@@ -172,14 +173,14 @@ The npm wrapper downloads the native release artifact for the current platform a
   </tr>
 </table>
 
-| Harness | Skills | MCP servers | Slash commands |
-|---|---:|---:|---:|
-| Codex CLI | Yes | Yes | Yes |
-| Claude Code | Yes | Yes | Yes |
-| Cursor | Yes | Yes | Yes |
-| OpenCode | Yes | Yes | Yes |
-| OpenClaw | Yes | Not Yet | Not Yet |
-| Antigravity (agy) | Yes | Yes | Not Yet |
+| Harness | Skills | MCP servers | Slash commands | Hooks |
+|---|---:|---:|---:|---:|
+| Codex CLI | Yes | Yes | Yes | Not Yet |
+| Claude Code | Yes | Yes | Yes | Yes |
+| Cursor | Yes | Yes | Yes | Not Yet |
+| OpenCode | Yes | Yes | Yes | Not Yet |
+| OpenClaw | Yes | Not Yet | Not Yet | Not Yet |
+| Antigravity (agy) | Yes | Yes | Not Yet | Not Yet |
 
 ## Local-first safety
 
@@ -197,6 +198,7 @@ Actions that can change local state include:
 - adopting an existing MCP config
 - enabling, disabling, resolving, or uninstalling an MCP server
 - creating, updating, syncing, importing, or deleting a slash command
+- creating, enabling, disabling, resolving, or deleting a hook binding
 - changing harness support settings
 
 App-owned files live under `~/Library/Application Support/skill-manager` on macOS and XDG base directories on Linux.
@@ -243,6 +245,15 @@ Slash commands are stored as TOML records under Skill Manager app storage, then 
 
 Skill Manager tracks target ownership with sync state and content hashes. It will not overwrite an untracked command file automatically, and it reports managed files as changed or missing when the target no longer matches the last synced hash. Review actions let you adopt unmanaged commands, restore managed content, adopt a changed harness command as the new source, or remove a broken binding while leaving the harness file untouched.
 
+### Hooks
+
+Hooks are stored as normalized Skill Manager records, then translated into the settings shape each harness expects and merged into that harness's hook config:
+
+- Claude Code writes hook entries into `~/.claude/settings.json` under the `hooks` key.
+- Other harnesses are not yet supported.
+
+Skill Manager owns only the specific hook entries it writes. It merges into the existing settings file without disturbing hooks or other keys it does not manage, and it tracks ownership with content hashes. When a managed hook is edited outside Skill Manager it is reported as drifted, and hooks found in a harness that Skill Manager does not yet manage are reported as unmanaged for review.
+
 ### CLIs
 
 CLI marketplace entries are preview-only.
@@ -255,6 +266,7 @@ Useful macOS paths:
 
 - shared skills store: `~/Library/Application Support/skill-manager/shared`
 - MCP manifest: `~/Library/Application Support/skill-manager/mcp/manifest.json`
+- hooks manifest: `~/Library/Application Support/skill-manager/hooks/manifest.json`
 - slash command library: `~/Library/Application Support/skill-manager/slash-commands/commands`
 - slash command sync state: `~/Library/Application Support/skill-manager/slash-commands/sync-state.json`
 - marketplace cache: `~/Library/Application Support/skill-manager/marketplace`
@@ -265,6 +277,7 @@ Useful Linux paths:
 
 - shared skills store: `${XDG_DATA_HOME:-~/.local/share}/skill-manager/shared`
 - MCP manifest: `${XDG_DATA_HOME:-~/.local/share}/skill-manager/mcp/manifest.json`
+- hooks manifest: `${XDG_DATA_HOME:-~/.local/share}/skill-manager/hooks/manifest.json`
 - slash command library: `${XDG_DATA_HOME:-~/.local/share}/skill-manager/slash-commands/commands`
 - slash command sync state: `${XDG_DATA_HOME:-~/.local/share}/skill-manager/slash-commands/sync-state.json`
 - marketplace cache: `${XDG_DATA_HOME:-~/.local/share}/skill-manager/marketplace`
@@ -345,7 +358,7 @@ npm run build
 
 ### Extension families
 
-- [ ] Hook support
+- [x] Hook support
 - [x] Slash command support
 - [ ] Plugin support
 
