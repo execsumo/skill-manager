@@ -103,6 +103,23 @@ from .hooks import (
     ReconcileHookRequest,
     SetHookHarnessesRequest,
 )
+from .permissions import (
+    AddPermissionRequest,
+    DisablePermissionRequest,
+    EnablePermissionRequest,
+    PermissionApplyConfigResponse,
+    PermissionBindingResponse,
+    PermissionInventoryColumnResponse,
+    PermissionInventoryEntryResponse,
+    PermissionInventoryIssueResponse,
+    PermissionInventoryResponse,
+    PermissionMutationFailureResponse,
+    PermissionMutationResponse,
+    PermissionSetHarnessesResultResponse,
+    PermissionSpecResponse,
+    ReconcilePermissionRequest,
+    SetPermissionHarnessesRequest,
+)
 
 __all__ = [
     "AdoptMcpRequest",
@@ -204,4 +221,19 @@ __all__ = [
     "HookSpecResponse",
     "ReconcileHookRequest",
     "SetHookHarnessesRequest",
+    "AddPermissionRequest",
+    "DisablePermissionRequest",
+    "EnablePermissionRequest",
+    "PermissionApplyConfigResponse",
+    "PermissionBindingResponse",
+    "PermissionInventoryColumnResponse",
+    "PermissionInventoryEntryResponse",
+    "PermissionInventoryIssueResponse",
+    "PermissionInventoryResponse",
+    "PermissionMutationFailureResponse",
+    "PermissionMutationResponse",
+    "PermissionSetHarnessesResultResponse",
+    "PermissionSpecResponse",
+    "ReconcilePermissionRequest",
+    "SetPermissionHarnessesRequest",
 ]

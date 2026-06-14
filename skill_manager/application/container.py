@@ -24,6 +24,12 @@ from .hooks import (
     HooksQueryService,
     HooksMutationService,
 )
+from .permissions import (
+    PermissionStore,
+    PermissionsReadModelService,
+    PermissionsQueryService,
+    PermissionsMutationService,
+)
 from .settings import SettingsMutationService, SettingsQueryService
 from .slash_commands import (
     SlashCommandMutationService,
@@ -84,6 +90,10 @@ class BackendContainer:
     hooks_read_models: HooksReadModelService
     hooks_queries: HooksQueryService
     hooks_mutations: HooksMutationService
+    permissions_store: PermissionStore
+    permissions_read_models: PermissionsReadModelService
+    permissions_queries: PermissionsQueryService
+    permissions_mutations: PermissionsMutationService
     db: Database
     scan_config_service: ScanConfigService
     scan_service: ScanService
@@ -201,6 +211,15 @@ def build_backend_container(
         read_models=hooks_read_models,
     )
 
+    permissions_store = PermissionStore(paths.permissions_store_manifest)
+    permissions_read_models = PermissionsReadModelService.from_kernel(store=permissions_store, kernel=harness_kernel)
+    invalidation.register(permissions_read_models)
+    permissions_queries = PermissionsQueryService(permissions_read_models)
+    permissions_mutations = PermissionsMutationService(
+        store=permissions_store,
+        read_models=permissions_read_models,
+    )
+
     db = Database(paths.db_path)
     scan_config_service = ScanConfigService(ScanConfigRepository(db))
     scan_service = ScanService(
@@ -239,6 +258,10 @@ def build_backend_container(
         hooks_read_models=hooks_read_models,
         hooks_queries=hooks_queries,
         hooks_mutations=hooks_mutations,
+        permissions_store=permissions_store,
+        permissions_read_models=permissions_read_models,
+        permissions_queries=permissions_queries,
+        permissions_mutations=permissions_mutations,
         db=db,
         scan_config_service=scan_config_service,
         scan_service=scan_service,

@@ -63,6 +63,12 @@ SUPPORTED_HARNESS_DEFINITIONS: tuple[HarnessDefinition, ...] = (
                 subtree_path=("hooks",),
                 codec="codex-hooks",
             ),
+            "permissions": ConfigSubtreeBindingProfile(
+                config_path_resolver=lambda context: context.home / ".codex" / "config.toml",
+                file_format="toml",
+                subtree_path=("permissions",),
+                codec="codex-permissions",
+            ),
             "slash_commands": CommandFileBindingProfile(
                 root_path_resolver=lambda context: context.home / ".codex",
                 output_dir_resolver=lambda context: context.home / ".codex" / "prompts",
@@ -101,6 +107,12 @@ SUPPORTED_HARNESS_DEFINITIONS: tuple[HarnessDefinition, ...] = (
                 file_format="json",
                 subtree_path=("hooks",),
                 codec="claude-code-hooks",
+            ),
+            "permissions": ConfigSubtreeBindingProfile(
+                config_path_resolver=lambda context: context.home / ".claude" / "settings.json",
+                file_format="json",
+                subtree_path=("permissions",),
+                codec="claude-code-permissions",
             ),
             "slash_commands": CommandFileBindingProfile(
                 root_path_resolver=lambda context: context.home / ".claude",
@@ -282,6 +294,12 @@ SUPPORTED_HARNESS_DEFINITIONS: tuple[HarnessDefinition, ...] = (
                 file_format="json",
                 subtree_path=(),
                 codec="antigravity-hooks",
+            ),
+            "permissions": ConfigSubtreeBindingProfile(
+                config_path_resolver=lambda context: context.home / ".gemini" / "antigravity-cli" / "settings.json",
+                file_format="json",
+                subtree_path=("permissions",),
+                codec="antigravity-permissions",
             ),
         },
     ),
