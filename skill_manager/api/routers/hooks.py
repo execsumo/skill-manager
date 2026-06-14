@@ -44,7 +44,7 @@ def create_hook(
         id=body.id,
         event=body.event,
         command=body.command,
-        matcher=body.matcher,
+        match=body.match,
         timeout=body.timeout,
         description=body.description,
     )
