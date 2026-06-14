@@ -14,9 +14,9 @@ from skill_manager.harness import HarnessKernelService, HarnessSupportStore
 def _spec(id: str = "test-hook", **overrides) -> HookSpec:
     base = dict(
         id=id,
-        event="PreToolUse",
+        event="pre_tool_use",
         command="echo hello",
-        matcher="Bash",
+        match="shell",
         timeout=30,
         description="A test hook",
     )
@@ -168,7 +168,6 @@ class FileBackedHooksAdapterTests(unittest.TestCase):
             payload = json.loads(adapter.config_path.read_text(encoding="utf-8"))
             self.assertEqual(payload["theme"], "dark")
             
-            # Verify both existing and new hooks exist under PreToolUse/Bash
             groups = payload["hooks"]["PreToolUse"]
             self.assertEqual(len(groups), 1)
             self.assertEqual(groups[0]["matcher"], "Bash")

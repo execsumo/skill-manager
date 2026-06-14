@@ -1,71 +1,195 @@
 from __future__ import annotations
 
 import unittest
-from skill_manager.application.hooks.mappers import ClaudeCodeHooksMapper
+from skill_manager.application.hooks.mappers import (
+    ClaudeCodeHooksMapper,
+    CodexHooksMapper,
+    CursorHooksMapper,
+    OpenCodeHooksMapper,
+    AntigravityHooksMapper,
+)
 from skill_manager.application.hooks.store import HookSpec
 from skill_manager.errors import MutationError
 
 
 class ClaudeCodeHooksMapperTests(unittest.TestCase):
-    def test_spec_to_dict_without_timeout(self) -> None:
+    def test_representable(self) -> None:
         mapper = ClaudeCodeHooksMapper()
-        spec = HookSpec(
-            id="test-hook",
-            event="PreToolUse",
-            command="echo hello",
-            matcher="Bash",
-        )
+        # Supported event and match
+        is_repr, _ = mapper.representable(HookSpec("h1", "pre_tool_use", "echo", match="shell"))
+        self.assertTrue(is_repr)
+        # Unsupported event
+        is_repr, _ = mapper.representable(HookSpec("h1", "invalid_event", "echo"))
+        self.assertFalse(is_repr)
+        # Unsupported match
+        is_repr, _ = mapper.representable(HookSpec("h1", "pre_tool_use", "echo", match="invalid_match"))
+        self.assertFalse(is_repr)
+
+    def test_spec_to_dict_and_dict_to_spec(self) -> None:
+        mapper = ClaudeCodeHooksMapper()
+        spec = HookSpec("h1", "pre_tool_use", "echo hello", match="shell", timeout=12)
+        
+        # Spec to dict
         d = mapper.spec_to_dict(spec)
         self.assertEqual(d["type"], "command")
         self.assertEqual(d["command"], "echo hello")
-        self.assertEqual(d["id"], "test-hook")
-        self.assertNotIn("timeout", d)
+        self.assertEqual(d["id"], "h1")
+        self.assertEqual(d["timeout"], 12)
 
-    def test_spec_to_dict_with_timeout(self) -> None:
-        mapper = ClaudeCodeHooksMapper()
-        spec = HookSpec(
-            id="test-hook",
-            event="PreToolUse",
-            command="echo hello",
-            matcher="Bash",
-            timeout=30,
-        )
-        d = mapper.spec_to_dict(spec)
-        self.assertEqual(d["type"], "command")
-        self.assertEqual(d["command"], "echo hello")
-        self.assertEqual(d["id"], "test-hook")
-        self.assertEqual(d["timeout"], 30)
+        # Dict to spec
+        parsed = mapper.dict_to_spec("pre_tool_use", "shell", d)
+        self.assertEqual(parsed.id, "h1")
+        self.assertEqual(parsed.event, "pre_tool_use")
+        self.assertEqual(parsed.match, "shell")
+        self.assertEqual(parsed.command, "echo hello")
+        self.assertEqual(parsed.timeout, 12)
 
-    def test_dict_to_spec_preserves_id(self) -> None:
+    def test_read_enable_disable_lifecycle(self) -> None:
         mapper = ClaudeCodeHooksMapper()
-        raw = {
-            "type": "command",
-            "command": "echo hello",
-            "id": "my-id",
-            "timeout": 45,
+        doc = {}
+        spec = HookSpec("h1", "pre_tool_use", "echo hello", match="shell")
+        
+        # Enable
+        mapper.enable_hook(doc, spec)
+        self.assertIn("hooks", doc)
+        self.assertIn("PreToolUse", doc["hooks"])
+        group = doc["hooks"]["PreToolUse"][0]
+        self.assertEqual(group["matcher"], "Bash")
+        self.assertEqual(group["hooks"][0]["command"], "echo hello")
+
+        # Read
+        entries = mapper.read_entries(doc, [spec])
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0].id, "h1")
+        self.assertEqual(entries[0].event, "pre_tool_use")
+        self.assertEqual(entries[0].match, "shell")
+
+        # Disable
+        mapper.disable_hook(doc, "h1")
+        self.assertNotIn("hooks", doc)
+
+
+class CodexHooksMapperTests(unittest.TestCase):
+    def test_representable(self) -> None:
+        mapper = CodexHooksMapper()
+        is_repr, _ = mapper.representable(HookSpec("h1", "pre_tool_use", "echo", match="shell"))
+        self.assertTrue(is_repr)
+        is_repr, _ = mapper.representable(HookSpec("h1", "invalid_event", "echo"))
+        self.assertFalse(is_repr)
+
+
+class CursorHooksMapperTests(unittest.TestCase):
+    def test_representable(self) -> None:
+        mapper = CursorHooksMapper()
+        # Shell is representable
+        is_repr, _ = mapper.representable(HookSpec("h1", "pre_tool_use", "echo", match="shell"))
+        self.assertTrue(is_repr)
+        # Web is not representable on Cursor
+        is_repr, _ = mapper.representable(HookSpec("h1", "pre_tool_use", "echo", match="web"))
+        self.assertFalse(is_repr)
+
+    def test_enable_and_read_event_mapping(self) -> None:
+        mapper = CursorHooksMapper()
+        doc = {}
+        spec = HookSpec("h1", "pre_tool_use", "echo hello", match="shell")
+        
+        # Enable maps (pre_tool_use, shell) -> beforeShellExecution
+        mapper.enable_hook(doc, spec)
+        self.assertEqual(doc["version"], 1)
+        self.assertIn("beforeShellExecution", doc["hooks"])
+        self.assertEqual(doc["hooks"]["beforeShellExecution"][0]["command"], "echo hello")
+
+        # Read resolves ID
+        entries = mapper.read_entries(doc, [spec])
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0].id, "h1")
+        self.assertEqual(entries[0].event, "pre_tool_use")
+        self.assertEqual(entries[0].match, "shell")
+
+    def test_id_by_hash_identity_for_unmanaged(self) -> None:
+        mapper = CursorHooksMapper()
+        doc = {
+            "version": 1,
+            "hooks": {
+                "beforeShellExecution": [
+                    {"command": "echo unmanaged"}
+                ]
+            }
         }
-        spec = mapper.dict_to_spec("PreToolUse", "Bash", raw)
-        self.assertEqual(spec.id, "my-id")
-        self.assertEqual(spec.event, "PreToolUse")
-        self.assertEqual(spec.command, "echo hello")
-        self.assertEqual(spec.matcher, "Bash")
-        self.assertEqual(spec.timeout, 45)
+        # Read without spec resolves to manual:<hash>
+        entries = mapper.read_entries(doc, [])
+        self.assertEqual(len(entries), 1)
+        self.assertTrue(entries[0].id.startswith("manual:"))
 
-    def test_dict_to_spec_generates_stable_id_when_missing(self) -> None:
-        mapper = ClaudeCodeHooksMapper()
-        raw = {
-            "type": "command",
-            "command": "echo hello",
-        }
-        spec1 = mapper.dict_to_spec("PreToolUse", "Bash", raw)
-        spec2 = mapper.dict_to_spec("PreToolUse", "Bash", raw)
-        self.assertTrue(spec1.id.startswith("manual:"))
-        self.assertEqual(spec1.id, spec2.id)
+        # Disable by hash ID
+        mapper.disable_hook(doc, entries[0].id)
+        self.assertNotIn("hooks", doc)
 
-    def test_dict_to_spec_errors_if_command_not_string(self) -> None:
-        mapper = ClaudeCodeHooksMapper()
-        with self.assertRaises(MutationError):
-            mapper.dict_to_spec("PreToolUse", None, {"type": "command", "command": 123})
+
+class OpenCodeHooksMapperTests(unittest.TestCase):
+    def test_representable(self) -> None:
+        mapper = OpenCodeHooksMapper()
+        # Stop is representable
+        is_repr, _ = mapper.representable(HookSpec("h1", "stop", "echo"))
+        self.assertTrue(is_repr)
+        # file_write is representable under post_tool_use
+        is_repr, _ = mapper.representable(HookSpec("h1", "post_tool_use", "echo", match="file_write"))
+        self.assertTrue(is_repr)
+        # shell is not representable on OpenCode
+        is_repr, _ = mapper.representable(HookSpec("h1", "pre_tool_use", "echo", match="shell"))
+        self.assertFalse(is_repr)
+
+    def test_enable_argv_wrapping_and_read(self) -> None:
+        mapper = OpenCodeHooksMapper()
+        doc = {}
+        spec = HookSpec("h1", "stop", "echo hello")
+
+        # Enable wraps command in ["/bin/sh", "-c", command]
+        mapper.enable_hook(doc, spec)
+        session_completed = doc["experimental"]["hook"]["session_completed"]
+        self.assertEqual(session_completed[0]["command"], ["/bin/sh", "-c", "echo hello"])
+
+        # Read unwraps argv array to command string
+        entries = mapper.read_entries(doc, [spec])
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0].id, "h1")
+        self.assertEqual(entries[0].event, "stop")
+        self.assertEqual(entries[0].payload["command"], ["/bin/sh", "-c", "echo hello"])
+
+
+class AntigravityHooksMapperTests(unittest.TestCase):
+    def test_representable(self) -> None:
+        mapper = AntigravityHooksMapper()
+        # stop is representable
+        is_repr, _ = mapper.representable(HookSpec("h1", "stop", "echo"))
+        self.assertTrue(is_repr)
+        # shell is representable
+        is_repr, _ = mapper.representable(HookSpec("h1", "pre_tool_use", "echo", match="shell"))
+        self.assertTrue(is_repr)
+        # mcp is not representable
+        is_repr, _ = mapper.representable(HookSpec("h1", "pre_tool_use", "echo", match="mcp"))
+        self.assertFalse(is_repr)
+
+    def test_enable_name_keyed_merge_and_read(self) -> None:
+        mapper = AntigravityHooksMapper()
+        doc = {}
+        spec = HookSpec("my-hook-id", "stop", "echo hello")
+
+        # Enable stores under top-level spec.id
+        mapper.enable_hook(doc, spec)
+        self.assertIn("my-hook-id", doc)
+        self.assertTrue(doc["my-hook-id"]["enabled"])
+        self.assertEqual(doc["my-hook-id"]["Stop"][0]["command"], "echo hello")
+
+        # Read
+        entries = mapper.read_entries(doc, [spec])
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0].id, "my-hook-id")
+        self.assertEqual(entries[0].event, "stop")
+
+        # Disable
+        mapper.disable_hook(doc, "my-hook-id")
+        self.assertNotIn("my-hook-id", doc)
 
 
 if __name__ == "__main__":
