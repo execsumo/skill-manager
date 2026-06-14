@@ -31,6 +31,7 @@ class HookObservedEntry:
     parsed_spec: HookSpec | None = None
     drift_detail: str | None = None
     parse_issue: str | None = None
+    caveat: str | None = None
 
 
 @dataclass(frozen=True)
@@ -39,6 +40,7 @@ class HookBinding:
     id: str
     state: BindingState
     drift_detail: str | None = None
+    caveat: str | None = None
 
 
 @dataclass(frozen=True)

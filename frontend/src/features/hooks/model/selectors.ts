@@ -120,8 +120,10 @@ export function matrixCellFor(
   const pendingKey = `${entry.id}:${column.harness}`;
   const baseLabel = `${entry.displayName} on ${column.label}`;
 
+  let cell: HooksMatrixCellModel;
+
   if (binding?.state === "managed") {
-    return {
+    cell = {
       state: "enabled",
       binding,
       writable,
@@ -130,11 +132,9 @@ export function matrixCellFor(
       ariaLabel: `Disable ${baseLabel}`,
       action: "disable",
     };
-  }
-
-  if (binding?.state === "drifted") {
+  } else if (binding?.state === "drifted") {
     const detail = binding.driftDetail ? ` (${binding.driftDetail})` : "";
-    return {
+    cell = {
       state: "different",
       binding,
       writable,
@@ -143,10 +143,8 @@ export function matrixCellFor(
       ariaLabel: `Resolve config for ${baseLabel}`,
       action: "resolve",
     };
-  }
-
-  if (binding?.state === "unmanaged") {
-    return {
+  } else if (binding?.state === "unmanaged") {
+    cell = {
       state: "observed",
       binding,
       writable,
@@ -155,10 +153,8 @@ export function matrixCellFor(
       ariaLabel: `Open details for ${baseLabel}`,
       action: "open",
     };
-  }
-
-  if (!writable || !entry.canEnable) {
-    return {
+  } else if (!writable || !entry.canEnable) {
+    cell = {
       state: "unavailable",
       binding,
       writable,
@@ -167,17 +163,23 @@ export function matrixCellFor(
       ariaLabel: `Unavailable for ${baseLabel}`,
       action: null,
     };
+  } else {
+    cell = {
+      state: "disabled",
+      binding,
+      writable,
+      pendingKey,
+      tooltip: `Disabled on ${column.label}`,
+      ariaLabel: `Enable ${baseLabel}`,
+      action: "enable",
+    };
   }
 
-  return {
-    state: "disabled",
-    binding,
-    writable,
-    pendingKey,
-    tooltip: `Disabled on ${column.label}`,
-    ariaLabel: `Enable ${baseLabel}`,
-    action: "enable",
-  };
+  if (binding?.caveat) {
+    cell.tooltip = `${cell.tooltip} (Caveat: ${binding.caveat})`;
+  }
+
+  return cell;
 }
 
 export function matrixCoverage(

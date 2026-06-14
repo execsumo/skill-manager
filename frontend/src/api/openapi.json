@@ -774,6 +774,17 @@
       },
       "HookBindingResponse": {
         "properties": {
+          "caveat": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Caveat"
+          },
           "driftDetail": {
             "anyOf": [
               {

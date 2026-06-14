@@ -34,22 +34,22 @@ class HookMapper(Protocol):
         raw: Mapping[str, object],
     ) -> HookSpec: ...
 
-    def representable(self, spec: HookSpec) -> tuple[bool, str | None]: ...
+    def representable(self, spec: HookSpec) -> tuple[bool, str | None, str | None]: ...
 
 
 class ClaudeCodeHooksMapper:
     """Mapper for Claude Code hooks under ~/.claude/settings.json."""
 
-    def representable(self, spec: HookSpec) -> tuple[bool, str | None]:
+    def representable(self, spec: HookSpec) -> tuple[bool, str | None, str | None]:
         supported_events = {"pre_tool_use", "post_tool_use", "user_prompt_submit", "session_start", "stop", "pre_compact"}
         if spec.event not in supported_events:
-            return False, f"Event '{spec.event}' is not supported by Claude Code"
+            return False, f"Event '{spec.event}' is not supported by Claude Code", None
         if spec.event in ("pre_tool_use", "post_tool_use"):
             supported_categories = {"any", "shell", "file_read", "file_write", "mcp", "web"}
             cat = spec.match or "any"
             if cat not in supported_categories:
-                return False, f"Tool category '{cat}' is not supported by Claude Code"
-        return True, None
+                return False, f"Tool category '{cat}' is not supported by Claude Code", None
+        return True, None, None
 
     def spec_to_dict(self, spec: HookSpec) -> dict[str, object]:
         payload: dict[str, object] = {
@@ -287,31 +287,31 @@ class ClaudeCodeHooksMapper:
 class CodexHooksMapper(ClaudeCodeHooksMapper):
     """Mapper for OpenAI Codex hooks under ~/.codex/config.toml."""
 
-    def representable(self, spec: HookSpec) -> tuple[bool, str | None]:
+    def representable(self, spec: HookSpec) -> tuple[bool, str | None, str | None]:
         supported_events = {"pre_tool_use", "post_tool_use", "user_prompt_submit", "session_start", "stop", "pre_compact"}
         if spec.event not in supported_events:
-            return False, f"Event '{spec.event}' is not supported by Codex"
+            return False, f"Event '{spec.event}' is not supported by Codex", None
         if spec.event in ("pre_tool_use", "post_tool_use"):
             supported_categories = {"any", "shell", "file_read", "file_write", "mcp", "web"}
             cat = spec.match or "any"
             if cat not in supported_categories:
-                return False, f"Tool category '{cat}' is not supported by Codex"
-        return True, None
+                return False, f"Tool category '{cat}' is not supported by Codex", None
+        return True, None, None
 
 
 class CursorHooksMapper:
     """Mapper for Cursor hooks under ~/.cursor/hooks.json."""
 
-    def representable(self, spec: HookSpec) -> tuple[bool, str | None]:
+    def representable(self, spec: HookSpec) -> tuple[bool, str | None, str | None]:
         supported_events = {"pre_tool_use", "post_tool_use", "user_prompt_submit", "session_start", "stop", "pre_compact"}
         if spec.event not in supported_events:
-            return False, f"Event '{spec.event}' is not supported by Cursor"
+            return False, f"Event '{spec.event}' is not supported by Cursor", None
         if spec.event in ("pre_tool_use", "post_tool_use"):
             supported_categories = {"any", "shell", "file_read", "file_write", "mcp"}
             cat = spec.match or "any"
             if cat not in supported_categories:
-                return False, f"Tool category '{cat}' is not supported by Cursor"
-        return True, None
+                return False, f"Tool category '{cat}' is not supported by Cursor", None
+        return True, None, None
 
     def spec_to_dict(self, spec: HookSpec) -> dict[str, object]:
         return {"command": spec.command}
@@ -456,12 +456,12 @@ class CursorHooksMapper:
 class OpenCodeHooksMapper:
     """Mapper for OpenCode hooks nested under experimental.hook in JSON."""
 
-    def representable(self, spec: HookSpec) -> tuple[bool, str | None]:
+    def representable(self, spec: HookSpec) -> tuple[bool, str | None, str | None]:
         if spec.event == "stop":
-            return True, None
+            return True, None, None
         if spec.event == "post_tool_use" and spec.match == "file_write":
-            return True, None
-        return False, "Only 'stop' and 'post_tool_use' with 'file_write' match are supported on OpenCode"
+            return True, None, None
+        return False, "Only 'stop' and 'post_tool_use' with 'file_write' match are supported on OpenCode", None
 
     def spec_to_dict(self, spec: HookSpec) -> dict[str, object]:
         return {"command": ["/bin/sh", "-c", spec.command]}
@@ -676,16 +676,22 @@ class OpenCodeHooksMapper:
 class AntigravityHooksMapper:
     """Mapper for Antigravity hooks under ~/.gemini/config/hooks.json."""
 
-    def representable(self, spec: HookSpec) -> tuple[bool, str | None]:
-        supported_events = {"pre_tool_use", "post_tool_use", "stop"}
+    def representable(self, spec: HookSpec) -> tuple[bool, str | None, str | None]:
+        supported_events = {"pre_tool_use", "post_tool_use", "stop", "user_prompt_submit"}
         if spec.event not in supported_events:
-            return False, f"Event '{spec.event}' is not supported by Antigravity"
+            return False, f"Event '{spec.event}' is not supported by Antigravity", None
         if spec.event in ("pre_tool_use", "post_tool_use"):
             supported_categories = {"any", "shell", "file_read", "file_write", "web"}
             cat = spec.match or "any"
             if cat not in supported_categories:
-                return False, f"Tool category '{cat}' is not supported by Antigravity"
-        return True, None
+                return False, f"Tool category '{cat}' is not supported by Antigravity", None
+        if spec.event == "user_prompt_submit":
+            return (
+                True,
+                None,
+                "On Antigravity this maps to PreInvocation, which fires before every model invocation, not only on user-prompt submit.",
+            )
+        return True, None, None
 
     def spec_to_dict(self, spec: HookSpec) -> dict[str, object]:
         payload: dict[str, object] = {
@@ -727,6 +733,7 @@ class AntigravityHooksMapper:
             "PreToolUse": "pre_tool_use",
             "PostToolUse": "post_tool_use",
             "Stop": "stop",
+            "PreInvocation": "user_prompt_submit",
         }
         matcher_map = {
             "run_command": "shell",
@@ -747,7 +754,7 @@ class AntigravityHooksMapper:
                 if not canonical_event:
                     continue
                 
-                if native_event == "Stop":
+                if native_event in ("Stop", "PreInvocation"):
                     if isinstance(val, list):
                         for hook in val:
                             if not isinstance(hook, dict):
@@ -799,6 +806,8 @@ class AntigravityHooksMapper:
 
         if spec.event == "stop":
             entry["Stop"] = [hook_payload]
+        elif spec.event == "user_prompt_submit":
+            entry["PreInvocation"] = [hook_payload]
         elif spec.event in ("pre_tool_use", "post_tool_use"):
             native_event = "PreToolUse" if spec.event == "pre_tool_use" else "PostToolUse"
             matcher_map = {
@@ -830,7 +839,7 @@ class AntigravityHooksMapper:
             for native_event, val in entry.items():
                 if native_event == "enabled":
                     continue
-                if native_event == "Stop":
+                if native_event in ("Stop", "PreInvocation"):
                     if isinstance(val, list):
                         for hook in val:
                             if isinstance(hook, dict) and hook.get("command") == command:

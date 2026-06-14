@@ -1166,6 +1166,8 @@ export interface components {
         };
         /** HookBindingResponse */
         HookBindingResponse: {
+            /** Caveat */
+            caveat?: string | null;
             /** Driftdetail */
             driftDetail?: string | null;
             /** Harness */
