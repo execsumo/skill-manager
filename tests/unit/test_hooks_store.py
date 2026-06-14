@@ -2,19 +2,18 @@ from __future__ import annotations
 
 import json
 import unittest
-import hashlib
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from skill_manager.application.hooks.store import HookSpec, HookStore, compute_revision
+from skill_manager.application.hooks.store import HookSpec, HookStore
 
 
 def _spec(hook_id: str = "test-hook", **overrides) -> HookSpec:
     base = dict(
         id=hook_id,
-        event="PreToolUse",
+        event="pre_tool_use",
         command="echo hello",
-        matcher="Bash",
+        match="shell",
         timeout=10,
         description="A test hook",
     )
@@ -27,7 +26,7 @@ class HookStoreTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             store = HookStore(Path(tmp) / "manifest.json")
             store.upsert_managed(_spec("hook1"))
-            store.upsert_managed(_spec("hook2", event="PostToolUse", command="echo post"))
+            store.upsert_managed(_spec("hook2", event="post_tool_use", command="echo post"))
 
             entries = store.list_managed()
 
