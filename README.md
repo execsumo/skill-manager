@@ -175,12 +175,12 @@ The npm wrapper downloads the native release artifact for the current platform a
 
 | Harness | Skills | MCP servers | Slash commands | Hooks |
 |---|---:|---:|---:|---:|
-| Codex CLI | Yes | Yes | Yes | Not Yet |
+| Codex CLI | Yes | Yes | Yes | Yes |
 | Claude Code | Yes | Yes | Yes | Yes |
-| Cursor | Yes | Yes | Yes | Not Yet |
-| OpenCode | Yes | Yes | Yes | Not Yet |
+| Cursor | Yes | Yes | Yes | Yes |
+| OpenCode | Yes | Yes | Yes | Partial |
 | OpenClaw | Yes | Not Yet | Not Yet | Not Yet |
-| Antigravity (agy) | Yes | Yes | Not Yet | Not Yet |
+| Antigravity (agy) | Yes | Yes | Not Yet | Partial |
 
 ## Local-first safety
 
@@ -247,12 +247,17 @@ Skill Manager tracks target ownership with sync state and content hashes. It wil
 
 ### Hooks
 
-Hooks are stored as normalized Skill Manager records, then translated into the settings shape each harness expects and merged into that harness's hook config:
+Hooks are stored as normalized Skill Manager records using **canonical events** (`pre_tool_use`, `post_tool_use`, `user_prompt_submit`, `session_start`, `stop`, `pre_compact`) and **canonical tool categories** (`shell`, `file_read`, `file_write`, `mcp`, `web`, `any`). Each harness codec translates a canonical record into that harness's native event names and config shape, and merges it into the harness's hook config:
 
 - Claude Code writes hook entries into `~/.claude/settings.json` under the `hooks` key.
-- Other harnesses are not yet supported.
+- Codex writes inline `[hooks]` tables into `~/.codex/config.toml` (same event schema as Claude).
+- Cursor writes `~/.cursor/hooks.json`, expressing each tool category as its dedicated event (`beforeShellExecution`, `afterFileEdit`, `beforeMCPExecution`, and so on).
+- OpenCode writes `experimental.hook` entries in `opencode.json` — limited to `file_edited` (post-edit on write) and `session_completed` (stop), so coverage is partial.
+- Antigravity (agy) writes a name-keyed `~/.gemini/config/hooks.json`, matching against its own tool names (`run_command`, `view_file`, …); it covers tool, stop, and (via `PreInvocation`) prompt-submit hooks, so coverage is partial.
 
-Skill Manager owns only the specific hook entries it writes. It merges into the existing settings file without disturbing hooks or other keys it does not manage, and it tracks ownership with content hashes. When a managed hook is edited outside Skill Manager it is reported as drifted, and hooks found in a harness that Skill Manager does not yet manage are reported as unmanaged for review.
+Because harnesses differ, not every canonical event maps to every harness. Skill Manager exposes a **representability matrix** showing where each hook can sync and where it cannot, including caveats — for example, an Antigravity `user_prompt_submit` hook maps to `PreInvocation`, which fires before every model invocation rather than only on prompt submit.
+
+Skill Manager owns only the specific hook entries it writes. It merges into each harness's config without disturbing hooks or other keys it does not manage, and it tracks ownership with content hashes. When a managed hook is edited outside Skill Manager it is reported as drifted, and hooks found in a harness that Skill Manager does not manage are reported as unmanaged for review.
 
 ### CLIs
 
