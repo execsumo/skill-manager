@@ -931,8 +931,8 @@ export interface components {
             event: string;
             /** Id */
             id: string;
-            /** Matcher */
-            matcher?: string | null;
+            /** Match */
+            match?: string | null;
             /** Timeout */
             timeout?: number | null;
         };
@@ -1174,7 +1174,7 @@ export interface components {
              * State
              * @enum {string}
              */
-            state: "managed" | "drifted" | "unmanaged" | "missing";
+            state: "managed" | "drifted" | "unmanaged" | "missing" | "unsupported";
         };
         /** HookInventoryColumnResponse */
         HookInventoryColumnResponse: {
@@ -1268,8 +1268,8 @@ export interface components {
             id: string;
             /** Installedat */
             installedAt: string;
-            /** Matcher */
-            matcher?: string | null;
+            /** Match */
+            match?: string | null;
             /** Revision */
             revision: string;
             /** Timeout */

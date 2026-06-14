@@ -110,10 +110,10 @@ export function HookDetailSheet({
                     <dt className="description-list-item__term">{copy.detail.event}</dt>
                     <dd className="description-list-item__definition">{spec?.event}</dd>
                   </div>
-                  {spec?.matcher ? (
+                  {spec?.match ? (
                     <div className="description-list-item">
-                      <dt className="description-list-item__term">{copy.detail.matcher}</dt>
-                      <dd className="description-list-item__definition">{spec.matcher}</dd>
+                      <dt className="description-list-item__term">{copy.detail.match}</dt>
+                      <dd className="description-list-item__definition">{spec.match}</dd>
                     </div>
                   ) : null}
                   {spec?.timeout ? (

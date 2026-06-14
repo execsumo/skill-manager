@@ -24,7 +24,7 @@
             "title": "Id",
             "type": "string"
           },
-          "matcher": {
+          "match": {
             "anyOf": [
               {
                 "type": "string"
@@ -33,7 +33,7 @@
                 "type": "null"
               }
             ],
-            "title": "Matcher"
+            "title": "Match"
           },
           "timeout": {
             "anyOf": [
@@ -794,7 +794,8 @@
               "managed",
               "drifted",
               "unmanaged",
-              "missing"
+              "missing",
+              "unsupported"
             ],
             "title": "State",
             "type": "string"
@@ -1056,7 +1057,7 @@
             "title": "Installedat",
             "type": "string"
           },
-          "matcher": {
+          "match": {
             "anyOf": [
               {
                 "type": "string"
@@ -1065,7 +1066,7 @@
                 "type": "null"
               }
             ],
-            "title": "Matcher"
+            "title": "Match"
           },
           "revision": {
             "title": "Revision",
