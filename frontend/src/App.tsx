@@ -25,6 +25,8 @@ const McpNeedsReviewPage = lazy(() => import("./features/mcp/screens/McpNeedsRev
 const McpInUsePage = lazy(() => import("./features/mcp/screens/McpInUsePage"));
 const HooksInUsePage = lazy(() => import("./features/hooks/screens/HooksInUsePage"));
 const HooksNeedsReviewPage = lazy(() => import("./features/hooks/screens/HooksNeedsReviewPage"));
+const PermissionsInUsePage = lazy(() => import("./features/permissions/screens/PermissionsInUsePage"));
+const PermissionsNeedsReviewPage = lazy(() => import("./features/permissions/screens/PermissionsNeedsReviewPage"));
 
 export function App() {
   const [queryClient] = useState(
@@ -125,6 +127,24 @@ function AppContent() {
             element={
               <Suspense fallback={<RouteLoadingPanel label="Loading hooks..." />}>
                 <HooksNeedsReviewPage />
+              </Suspense>
+            }
+          />
+
+          <Route path="permissions" element={<Navigate to="/permissions/use" replace />} />
+          <Route
+            path="permissions/use"
+            element={
+              <Suspense fallback={<RouteLoadingPanel label="Loading permissions..." />}>
+                <PermissionsInUsePage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="permissions/review"
+            element={
+              <Suspense fallback={<RouteLoadingPanel label="Loading permissions..." />}>
+                <PermissionsNeedsReviewPage />
               </Suspense>
             }
           />

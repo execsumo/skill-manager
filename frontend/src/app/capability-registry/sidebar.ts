@@ -6,9 +6,10 @@ import { skillsRoutes, useSkillsListQuery } from "../../features/skills/public";
 import { slashCommandRoutes, useSlashCommandsQuery } from "../../features/slash-commands/public";
 import { marketplaceRoutes } from "../../features/marketplace/public";
 import { hooksRoutes, useHooksInventoryQuery } from "../../features/hooks/public";
+import { permissionsRoutes, usePermissionsInventoryQuery } from "../../features/permissions/public";
 import { useCommonCopy } from "../../i18n";
 
-export type SidebarIconKey = "overview" | "skills" | "slash-commands" | "mcp" | "marketplace" | "hooks";
+export type SidebarIconKey = "overview" | "skills" | "slash-commands" | "mcp" | "marketplace" | "hooks" | "permissions";
 
 export interface SidebarLinkModel {
   key: string;
@@ -44,6 +45,8 @@ export function useSidebarModel(): SidebarModel {
   const mcpCounts = mcpSidebarCounts(mcpQuery.data);
   const hooksQuery = useHooksInventoryQuery();
   const hooksCounts = hooksSidebarCounts(hooksQuery.data);
+  const permissionsQuery = usePermissionsInventoryQuery();
+  const permissionsCounts = permissionsSidebarCounts(permissionsQuery.data);
 
   return useMemo(
     () => ({
@@ -122,6 +125,21 @@ export function useSidebarModel(): SidebarModel {
           ],
         },
         {
+          key: "permissions",
+          label: common.nav.permissions || "Permissions",
+          iconKey: "permissions",
+          count: permissionsCounts.total,
+          links: [
+            { key: "permissions-use", to: permissionsRoutes.inUse, label: common.productLanguage.inUse, count: permissionsCounts.inUse },
+            {
+              key: "permissions-review",
+              to: permissionsRoutes.needsReview,
+              label: common.productLanguage.needsReview,
+              count: permissionsCounts.needsReview,
+            },
+          ],
+        },
+        {
           key: "marketplace",
           label: common.nav.marketplace,
           iconKey: "marketplace",
@@ -141,6 +159,9 @@ export function useSidebarModel(): SidebarModel {
       hooksCounts.inUse,
       hooksCounts.needsReview,
       hooksCounts.total,
+      permissionsCounts.inUse,
+      permissionsCounts.needsReview,
+      permissionsCounts.total,
       needsReviewSkills,
       slashCommandCount,
       slashCommandReviewCount,
@@ -179,6 +200,23 @@ function mcpSidebarCounts(inventory: ReturnType<typeof useMcpInventoryQuery>["da
 }
 
 function hooksSidebarCounts(inventory: ReturnType<typeof useHooksInventoryQuery>["data"]): {
+  inUse: number | null;
+  needsReview: number | null;
+  total: number | null;
+} {
+  if (!inventory || !inventory.entries) {
+    return { inUse: null, needsReview: null, total: null };
+  }
+  const inUse = inventory.entries.filter((entry) => entry.kind === "managed").length;
+  const needsReview = inventory.entries.filter((entry) => entry.kind === "unmanaged").length;
+  return {
+    inUse,
+    needsReview,
+    total: sumLoadedCounts(inUse, needsReview),
+  };
+}
+
+function permissionsSidebarCounts(inventory: ReturnType<typeof usePermissionsInventoryQuery>["data"]): {
   inUse: number | null;
   needsReview: number | null;
   total: number | null;

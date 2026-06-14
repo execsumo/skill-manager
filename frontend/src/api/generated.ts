@@ -467,6 +467,110 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Permissions */
+        get: operations["list_permissions_api_permissions_get"];
+        put?: never;
+        /** Create Permission */
+        post: operations["create_permission_api_permissions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/permissions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Permission */
+        get: operations["get_permission_api_permissions__id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Permission */
+        delete: operations["delete_permission_api_permissions__id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/permissions/{id}/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Disable Permission */
+        post: operations["disable_permission_api_permissions__id__disable_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/permissions/{id}/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enable Permission */
+        post: operations["enable_permission_api_permissions__id__enable_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/permissions/{id}/reconcile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reconcile Permission */
+        post: operations["reconcile_permission_api_permissions__id__reconcile_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/permissions/{id}/set-harnesses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set Permission Harnesses */
+        post: operations["set_permission_harnesses_api_permissions__id__set_harnesses_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/scan/availability": {
         parameters: {
             query?: never;
@@ -941,6 +1045,22 @@ export interface components {
             /** Qualifiedname */
             qualifiedName: string;
         };
+        /** AddPermissionRequest */
+        AddPermissionRequest: {
+            /** Decision */
+            decision: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Id */
+            id: string;
+            /** Pattern */
+            pattern?: string | null;
+            /** Scope */
+            scope: string;
+        };
         /** AdoptMcpRequest */
         AdoptMcpRequest: {
             /** Harnesses */
@@ -1086,6 +1206,14 @@ export interface components {
              */
             harness: string;
         };
+        /** DisablePermissionRequest */
+        DisablePermissionRequest: {
+            /**
+             * Harness
+             * @description Harness identifier
+             */
+            harness: string;
+        };
         /** DisableSkillRequest */
         DisableSkillRequest: {
             /**
@@ -1108,6 +1236,14 @@ export interface components {
             config?: {
                 [key: string]: unknown;
             } | null;
+            /**
+             * Harness
+             * @description Harness identifier
+             */
+            harness: string;
+        };
+        /** EnablePermissionRequest */
+        EnablePermissionRequest: {
             /**
              * Harness
              * @description Harness identifier
@@ -1875,6 +2011,127 @@ export interface components {
             /** Ok */
             ok: boolean;
         };
+        /** PermissionApplyConfigResponse */
+        PermissionApplyConfigResponse: {
+            /** Failed */
+            failed: components["schemas"]["PermissionMutationFailureResponse"][];
+            /** Ok */
+            ok: boolean;
+            permission: components["schemas"]["PermissionSpecResponse"];
+            /** Succeeded */
+            succeeded: string[];
+        };
+        /** PermissionBindingResponse */
+        PermissionBindingResponse: {
+            /** Caveat */
+            caveat?: string | null;
+            /** Driftdetail */
+            driftDetail?: string | null;
+            /** Harness */
+            harness: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "managed" | "drifted" | "unmanaged" | "missing" | "unsupported";
+        };
+        /** PermissionInventoryColumnResponse */
+        PermissionInventoryColumnResponse: {
+            /** Configpresent */
+            configPresent: boolean;
+            /** Harness */
+            harness: string;
+            /** Installed */
+            installed: boolean;
+            /** Label */
+            label: string;
+            /** Logokey */
+            logoKey?: string | null;
+            /** Permissionsunavailablereason */
+            permissionsUnavailableReason?: string | null;
+            /**
+             * Permissionswritable
+             * @default true
+             */
+            permissionsWritable: boolean;
+        };
+        /** PermissionInventoryEntryResponse */
+        PermissionInventoryEntryResponse: {
+            /** Canenable */
+            canEnable: boolean;
+            /** Displayname */
+            displayName: string;
+            /**
+             * Enabledstatus
+             * @enum {string}
+             */
+            enabledStatus: "enabled" | "disabled";
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "managed" | "unmanaged";
+            /** Sightings */
+            sightings: components["schemas"]["PermissionBindingResponse"][];
+            spec?: components["schemas"]["PermissionSpecResponse"] | null;
+        };
+        /** PermissionInventoryIssueResponse */
+        PermissionInventoryIssueResponse: {
+            /** Name */
+            name: string;
+            /** Reason */
+            reason: string;
+        };
+        /** PermissionInventoryResponse */
+        PermissionInventoryResponse: {
+            /** Columns */
+            columns: components["schemas"]["PermissionInventoryColumnResponse"][];
+            /** Entries */
+            entries: components["schemas"]["PermissionInventoryEntryResponse"][];
+            /** Issues */
+            issues?: components["schemas"]["PermissionInventoryIssueResponse"][];
+        };
+        /** PermissionMutationFailureResponse */
+        PermissionMutationFailureResponse: {
+            /** Error */
+            error: string;
+            /** Harness */
+            harness: string;
+        };
+        /** PermissionMutationResponse */
+        PermissionMutationResponse: {
+            /** Ok */
+            ok: boolean;
+            permission: components["schemas"]["PermissionSpecResponse"];
+        };
+        /** PermissionSetHarnessesResultResponse */
+        PermissionSetHarnessesResultResponse: {
+            /** Failed */
+            failed: components["schemas"]["PermissionMutationFailureResponse"][];
+            /** Ok */
+            ok: boolean;
+            /** Succeeded */
+            succeeded: string[];
+        };
+        /** PermissionSpecResponse */
+        PermissionSpecResponse: {
+            /** Decision */
+            decision: string;
+            /** Description */
+            description: string;
+            /** Id */
+            id: string;
+            /** Installedat */
+            installedAt: string;
+            /** Pattern */
+            pattern?: string | null;
+            /** Revision */
+            revision: string;
+            /** Scope */
+            scope: string;
+        };
         /** ReconcileHookRequest */
         ReconcileHookRequest: {
             /** Harnesses */
@@ -1889,6 +2146,18 @@ export interface components {
         };
         /** ReconcileMcpServerRequest */
         ReconcileMcpServerRequest: {
+            /** Harnesses */
+            harnesses?: string[] | null;
+            /** Observed harness */
+            observedHarness?: string | null;
+            /**
+             * Sourcekind
+             * @enum {string}
+             */
+            sourceKind: "managed" | "harness";
+        };
+        /** ReconcilePermissionRequest */
+        ReconcilePermissionRequest: {
             /** Harnesses */
             harnesses?: string[] | null;
             /** Observed harness */
@@ -2161,6 +2430,14 @@ export interface components {
             config?: {
                 [key: string]: unknown;
             } | null;
+            /**
+             * Target
+             * @enum {string}
+             */
+            target: "enabled" | "disabled";
+        };
+        /** SetPermissionHarnessesRequest */
+        SetPermissionHarnessesRequest: {
             /**
              * Target
              * @enum {string}
@@ -3528,6 +3805,261 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["McpUnmanagedByServerResponse"];
+                };
+            };
+        };
+    };
+    list_permissions_api_permissions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PermissionInventoryResponse"];
+                };
+            };
+        };
+    };
+    create_permission_api_permissions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddPermissionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PermissionMutationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_permission_api_permissions__id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PermissionInventoryEntryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_permission_api_permissions__id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PermissionSetHarnessesResultResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    disable_permission_api_permissions__id__disable_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DisablePermissionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    enable_permission_api_permissions__id__enable_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnablePermissionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reconcile_permission_api_permissions__id__reconcile_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReconcilePermissionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PermissionApplyConfigResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_permission_harnesses_api_permissions__id__set_harnesses_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetPermissionHarnessesRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PermissionSetHarnessesResultResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

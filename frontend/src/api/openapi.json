@@ -70,6 +70,49 @@
         "title": "AddMcpServerRequest",
         "type": "object"
       },
+      "AddPermissionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "decision": {
+            "minLength": 1,
+            "title": "Decision",
+            "type": "string"
+          },
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "pattern": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pattern"
+          },
+          "scope": {
+            "minLength": 1,
+            "title": "Scope",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "decision",
+          "scope"
+        ],
+        "title": "AddPermissionRequest",
+        "type": "object"
+      },
       "AdoptMcpRequest": {
         "additionalProperties": false,
         "properties": {
@@ -575,6 +618,21 @@
         "title": "DisableMcpServerRequest",
         "type": "object"
       },
+      "DisablePermissionRequest": {
+        "properties": {
+          "harness": {
+            "description": "Harness identifier",
+            "minLength": 1,
+            "title": "Harness",
+            "type": "string"
+          }
+        },
+        "required": [
+          "harness"
+        ],
+        "title": "DisablePermissionRequest",
+        "type": "object"
+      },
       "DisableSkillRequest": {
         "properties": {
           "harness": {
@@ -630,6 +688,21 @@
           "harness"
         ],
         "title": "EnableMcpServerRequest",
+        "type": "object"
+      },
+      "EnablePermissionRequest": {
+        "properties": {
+          "harness": {
+            "description": "Harness identifier",
+            "minLength": 1,
+            "title": "Harness",
+            "type": "string"
+          }
+        },
+        "required": [
+          "harness"
+        ],
+        "title": "EnablePermissionRequest",
         "type": "object"
       },
       "EnableSkillRequest": {
@@ -2999,6 +3072,362 @@
         "title": "OkResponse",
         "type": "object"
       },
+      "PermissionApplyConfigResponse": {
+        "properties": {
+          "failed": {
+            "items": {
+              "$ref": "#/components/schemas/PermissionMutationFailureResponse"
+            },
+            "title": "Failed",
+            "type": "array"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "permission": {
+            "$ref": "#/components/schemas/PermissionSpecResponse"
+          },
+          "succeeded": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Succeeded",
+            "type": "array"
+          }
+        },
+        "required": [
+          "ok",
+          "permission",
+          "succeeded",
+          "failed"
+        ],
+        "title": "PermissionApplyConfigResponse",
+        "type": "object"
+      },
+      "PermissionBindingResponse": {
+        "properties": {
+          "caveat": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Caveat"
+          },
+          "driftDetail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Driftdetail"
+          },
+          "harness": {
+            "title": "Harness",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "managed",
+              "drifted",
+              "unmanaged",
+              "missing",
+              "unsupported"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "harness",
+          "state"
+        ],
+        "title": "PermissionBindingResponse",
+        "type": "object"
+      },
+      "PermissionInventoryColumnResponse": {
+        "properties": {
+          "configPresent": {
+            "title": "Configpresent",
+            "type": "boolean"
+          },
+          "harness": {
+            "title": "Harness",
+            "type": "string"
+          },
+          "installed": {
+            "title": "Installed",
+            "type": "boolean"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "logoKey": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logokey"
+          },
+          "permissionsUnavailableReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Permissionsunavailablereason"
+          },
+          "permissionsWritable": {
+            "default": true,
+            "title": "Permissionswritable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "harness",
+          "label",
+          "installed",
+          "configPresent"
+        ],
+        "title": "PermissionInventoryColumnResponse",
+        "type": "object"
+      },
+      "PermissionInventoryEntryResponse": {
+        "properties": {
+          "canEnable": {
+            "title": "Canenable",
+            "type": "boolean"
+          },
+          "displayName": {
+            "title": "Displayname",
+            "type": "string"
+          },
+          "enabledStatus": {
+            "enum": [
+              "enabled",
+              "disabled"
+            ],
+            "title": "Enabledstatus",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "managed",
+              "unmanaged"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "sightings": {
+            "items": {
+              "$ref": "#/components/schemas/PermissionBindingResponse"
+            },
+            "title": "Sightings",
+            "type": "array"
+          },
+          "spec": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PermissionSpecResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "kind",
+          "canEnable",
+          "enabledStatus",
+          "sightings"
+        ],
+        "title": "PermissionInventoryEntryResponse",
+        "type": "object"
+      },
+      "PermissionInventoryIssueResponse": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "reason"
+        ],
+        "title": "PermissionInventoryIssueResponse",
+        "type": "object"
+      },
+      "PermissionInventoryResponse": {
+        "properties": {
+          "columns": {
+            "items": {
+              "$ref": "#/components/schemas/PermissionInventoryColumnResponse"
+            },
+            "title": "Columns",
+            "type": "array"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/PermissionInventoryEntryResponse"
+            },
+            "title": "Entries",
+            "type": "array"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/PermissionInventoryIssueResponse"
+            },
+            "title": "Issues",
+            "type": "array"
+          }
+        },
+        "required": [
+          "columns",
+          "entries"
+        ],
+        "title": "PermissionInventoryResponse",
+        "type": "object"
+      },
+      "PermissionMutationFailureResponse": {
+        "properties": {
+          "error": {
+            "title": "Error",
+            "type": "string"
+          },
+          "harness": {
+            "title": "Harness",
+            "type": "string"
+          }
+        },
+        "required": [
+          "harness",
+          "error"
+        ],
+        "title": "PermissionMutationFailureResponse",
+        "type": "object"
+      },
+      "PermissionMutationResponse": {
+        "properties": {
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "permission": {
+            "$ref": "#/components/schemas/PermissionSpecResponse"
+          }
+        },
+        "required": [
+          "ok",
+          "permission"
+        ],
+        "title": "PermissionMutationResponse",
+        "type": "object"
+      },
+      "PermissionSetHarnessesResultResponse": {
+        "properties": {
+          "failed": {
+            "items": {
+              "$ref": "#/components/schemas/PermissionMutationFailureResponse"
+            },
+            "title": "Failed",
+            "type": "array"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "succeeded": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Succeeded",
+            "type": "array"
+          }
+        },
+        "required": [
+          "ok",
+          "succeeded",
+          "failed"
+        ],
+        "title": "PermissionSetHarnessesResultResponse",
+        "type": "object"
+      },
+      "PermissionSpecResponse": {
+        "properties": {
+          "decision": {
+            "title": "Decision",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "installedAt": {
+            "title": "Installedat",
+            "type": "string"
+          },
+          "pattern": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pattern"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "string"
+          },
+          "scope": {
+            "title": "Scope",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "decision",
+          "scope",
+          "description",
+          "installedAt",
+          "revision"
+        ],
+        "title": "PermissionSpecResponse",
+        "type": "object"
+      },
       "ReconcileHookRequest": {
         "additionalProperties": false,
         "properties": {
@@ -3083,6 +3512,49 @@
           "sourceKind"
         ],
         "title": "ReconcileMcpServerRequest",
+        "type": "object"
+      },
+      "ReconcilePermissionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "harnesses": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Harnesses"
+          },
+          "observedHarness": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed harness"
+          },
+          "sourceKind": {
+            "enum": [
+              "managed",
+              "harness"
+            ],
+            "title": "Sourcekind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sourceKind"
+        ],
+        "title": "ReconcilePermissionRequest",
         "type": "object"
       },
       "ScanAvailabilityResponse": {
@@ -3736,6 +4208,23 @@
           "target"
         ],
         "title": "SetMcpServerHarnessesRequest",
+        "type": "object"
+      },
+      "SetPermissionHarnessesRequest": {
+        "properties": {
+          "target": {
+            "enum": [
+              "enabled",
+              "disabled"
+            ],
+            "title": "Target",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target"
+        ],
+        "title": "SetPermissionHarnessesRequest",
         "type": "object"
       },
       "SetSkillHarnessesFailureResponse": {
@@ -6289,6 +6778,332 @@
           }
         },
         "summary": "List Unmanaged By Server"
+      }
+    },
+    "/api/permissions": {
+      "get": {
+        "operationId": "list_permissions_api_permissions_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PermissionInventoryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Permissions"
+      },
+      "post": {
+        "operationId": "create_permission_api_permissions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddPermissionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PermissionMutationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Permission"
+      }
+    },
+    "/api/permissions/{id}": {
+      "delete": {
+        "operationId": "delete_permission_api_permissions__id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "title": "Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PermissionSetHarnessesResultResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Permission"
+      },
+      "get": {
+        "operationId": "get_permission_api_permissions__id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "title": "Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PermissionInventoryEntryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Permission"
+      }
+    },
+    "/api/permissions/{id}/disable": {
+      "post": {
+        "operationId": "disable_permission_api_permissions__id__disable_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "title": "Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DisablePermissionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Disable Permission"
+      }
+    },
+    "/api/permissions/{id}/enable": {
+      "post": {
+        "operationId": "enable_permission_api_permissions__id__enable_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "title": "Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnablePermissionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Enable Permission"
+      }
+    },
+    "/api/permissions/{id}/reconcile": {
+      "post": {
+        "operationId": "reconcile_permission_api_permissions__id__reconcile_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "title": "Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReconcilePermissionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PermissionApplyConfigResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reconcile Permission"
+      }
+    },
+    "/api/permissions/{id}/set-harnesses": {
+      "post": {
+        "operationId": "set_permission_harnesses_api_permissions__id__set_harnesses_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "title": "Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetPermissionHarnessesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PermissionSetHarnessesResultResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Permission Harnesses"
       }
     },
     "/api/scan/availability": {
