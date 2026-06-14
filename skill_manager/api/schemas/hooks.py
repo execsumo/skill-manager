@@ -42,6 +42,16 @@ class ReconcileHookRequest(BaseModel):
     harnesses: list[str] | None = None
 
 
+class PromoteHookRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+    observed_harness: str | None = Field(
+        default=None,
+        alias="observedHarness",
+        title="Observed harness",
+    )
+
+
 class HookSpecResponse(BaseModel):
     id: str
     event: str
@@ -128,6 +138,7 @@ __all__ = [
     "HookMutationResponse",
     "HookSetHarnessesResultResponse",
     "HookSpecResponse",
+    "PromoteHookRequest",
     "ReconcileHookRequest",
     "SetHookHarnessesRequest",
 ]

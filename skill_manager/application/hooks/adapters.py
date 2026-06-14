@@ -313,6 +313,13 @@ def _normalize_payload(value: object) -> object:
 def _is_semantic_default(key: str, value: object) -> bool:
     if key == "type" and value == "command":
         return True
+    # ``id`` is skill-manager bookkeeping, not hook behavior. Excluding it from
+    # the drift comparison lets a promoted (adopted) external hook — whose raw
+    # payload has no id — read back as managed rather than drifted. Drift is only
+    # ever compared between entries already matched by id, so this is neutral for
+    # hooks that skill-manager itself wrote.
+    if key == "id":
+        return True
     return False
 
 

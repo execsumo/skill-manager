@@ -91,6 +91,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/hooks/{id}/promote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Promote Hook */
+        post: operations["promote_hook_api_hooks__id__promote_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/hooks/{id}/reconcile": {
         parameters: {
             query?: never;
@@ -2149,6 +2166,11 @@ export interface components {
             /** Scope */
             scope: string;
         };
+        /** PromoteHookRequest */
+        PromoteHookRequest: {
+            /** Observed harness */
+            observedHarness?: string | null;
+        };
         /** PromotePermissionRequest */
         PromotePermissionRequest: {
             /** Observed harness */
@@ -3045,6 +3067,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    promote_hook_api_hooks__id__promote_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PromoteHookRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HookMutationResponse"];
                 };
             };
             /** @description Validation Error */

@@ -59,6 +59,16 @@ export async function createHook(body: {
   return postJson<HookMutationResponseDto>("/hooks", body);
 }
 
+export async function promoteHook(args: {
+  id: string;
+  observedHarness?: string | null;
+}): Promise<HookMutationResponseDto> {
+  return postJson<HookMutationResponseDto>(
+    `/hooks/${encodeURIComponent(args.id)}/promote`,
+    { observedHarness: args.observedHarness ?? null },
+  );
+}
+
 export async function reconcileHook(args: {
   id: string;
   sourceKind: "managed" | "harness";

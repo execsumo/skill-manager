@@ -174,5 +174,52 @@ class HookRoutesTests(unittest.TestCase):
             self.assertEqual(agy_cfg["agy-hook"]["Stop"][0]["command"], "git push")
 
 
+    def test_unmanaged_hook_is_readable_and_promotable(self) -> None:
+        with AppTestHarness() as harness:
+            # Seed an unmanaged hook directly in the Claude config.
+            claude_path = harness.spec.home / ".claude" / "settings.json"
+            claude_path.parent.mkdir(parents=True, exist_ok=True)
+            claude_path.write_text(
+                json.dumps(
+                    {
+                        "hooks": {
+                            "PreToolUse": [
+                                {
+                                    "matcher": "Bash",
+                                    "hooks": [{"type": "command", "command": "echo review-me"}],
+                                }
+                            ]
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            payload = harness.get_json("/api/hooks")
+            entry = next(
+                e for e in payload["entries"]
+                if e.get("spec") and e["spec"].get("command") == "echo review-me"
+            )
+            # Bug regression: unmanaged hooks must carry a parsed spec and a
+            # human-readable name, not a bare "manual:<hash>" id.
+            self.assertEqual(entry["kind"], "unmanaged")
+            self.assertEqual(entry["spec"]["event"], "pre_tool_use")
+            self.assertNotEqual(entry["displayName"], entry["id"])
+            self.assertIn("echo review-me", entry["displayName"])
+
+            # Promote it into the managed manifest.
+            promoted = harness.post_json(f"/api/hooks/{entry['id']}/promote", {})
+            self.assertTrue(promoted["ok"])
+            self.assertEqual(promoted["hook"]["command"], "echo review-me")
+
+            # The existing Claude binding is reclassified as managed (not drifted),
+            # without rewriting the harness config.
+            payload2 = harness.get_json("/api/hooks")
+            entry2 = next(e for e in payload2["entries"] if e["id"] == entry["id"])
+            self.assertEqual(entry2["kind"], "managed")
+            states = {s["harness"]: s["state"] for s in entry2["sightings"]}
+            self.assertEqual(states.get("claude"), "managed")
+
+
 if __name__ == "__main__":
     unittest.main()

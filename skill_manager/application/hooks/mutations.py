@@ -35,6 +35,27 @@ class HooksMutationService:
         self.read_models.invalidate()
         return stored
 
+    def promote_hook(
+        self,
+        id: str,
+        *,
+        observed_harness: str | None = None,
+    ) -> dict[str, object]:
+        """Adopt an unmanaged, harness-observed hook into the managed manifest.
+
+        The hook keeps its observed id so the next scan reclassifies the existing
+        harness binding from ``unmanaged`` to ``managed`` (no rewrite needed).
+        """
+        if self.store.get_managed(id) is not None:
+            raise MutationError(
+                f"hook '{id}' is already managed",
+                status=409,
+            )
+        spec = self._observed_spec_any(id, observed_harness)
+        stored = self.store.upsert_managed(replace(spec, id=id))
+        self.read_models.invalidate()
+        return {"ok": True, "hook": stored.to_dict()}
+
     def delete_hook(self, id: str) -> dict[str, object]:
         if self.store.get_managed(id) is None:
             raise MutationError(f"unknown hook: {id}", status=404)
@@ -160,6 +181,16 @@ class HooksMutationService:
                     if entry.id == id and entry.parsed_spec is not None:
                         return entry.parsed_spec
         raise MutationError(f"hook '{id}' was not observed in harness '{harness}'", status=400)
+
+    def _observed_spec_any(self, id: str, harness: str | None) -> HookSpec:
+        if harness is not None:
+            return self._observed_spec(id, harness)
+        snapshot = self.read_models.snapshot()
+        for scan in snapshot.harness_scans:
+            for entry in scan.entries:
+                if entry.id == id and entry.parsed_spec is not None:
+                    return entry.parsed_spec
+        raise MutationError(f"hook '{id}' was not observed in any harness", status=400)
 
     def _require_spec(self, id: str) -> HookSpec:
         spec = self.store.get_managed(id)

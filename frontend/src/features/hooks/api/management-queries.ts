@@ -11,6 +11,7 @@ import {
   enableHook,
   fetchHooksInventory,
   fetchHookDetail,
+  promoteHook,
   reconcileHook,
   setHookHarnesses,
   uninstallHook,
@@ -75,6 +76,14 @@ export function useCreateHookMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createHook,
+    onSettled: () => invalidateHooksQueries(queryClient),
+  });
+}
+
+export function usePromoteHookMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: promoteHook,
     onSettled: () => invalidateHooksQueries(queryClient),
   });
 }

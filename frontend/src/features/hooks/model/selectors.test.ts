@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type {
+  HookInventoryDto,
   HookInventoryEntryDto,
   HookInventoryColumnDto,
 } from "../api/management-types";
-import { matrixCellFor } from "./selectors";
+import { filterHooksNeedsReview, matrixCellFor } from "./selectors";
 
 describe("hooks selectors", () => {
   const column: HookInventoryColumnDto = {
@@ -13,6 +14,38 @@ describe("hooks selectors", () => {
     configPresent: true,
     hooksWritable: true,
   };
+
+  it("filterHooksNeedsReview returns only unmanaged entries and honors search", () => {
+    const inventory: HookInventoryDto = {
+      columns: [column],
+      entries: [
+        {
+          id: "managed-1",
+          displayName: "stop: echo done",
+          kind: "managed",
+          canEnable: true,
+          enabledStatus: "enabled",
+          sightings: [{ harness: "antigravity-hooks", state: "managed" }],
+        },
+        {
+          id: "manual:abc",
+          displayName: "pre_tool_use · shell: rtk hook",
+          kind: "unmanaged",
+          spec: { id: "", event: "pre_tool_use", command: "rtk hook", match: "shell", description: "", installedAt: "", revision: "" },
+          canEnable: true,
+          enabledStatus: "disabled",
+          sightings: [{ harness: "antigravity-hooks", state: "unmanaged" }],
+        },
+      ],
+      issues: [],
+    };
+
+    const all = filterHooksNeedsReview(inventory, "");
+    expect(all.map((e) => e.id)).toEqual(["manual:abc"]);
+    expect(filterHooksNeedsReview(inventory, "rtk")).toHaveLength(1);
+    expect(filterHooksNeedsReview(inventory, "echo done")).toHaveLength(0);
+    expect(filterHooksNeedsReview(null, "")).toEqual([]);
+  });
 
   it("appends caveat to tooltip for enabled hooks when caveat exists", () => {
     const entry: HookInventoryEntryDto = {

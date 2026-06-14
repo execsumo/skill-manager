@@ -100,6 +100,7 @@ from .hooks import (
     HookMutationResponse,
     HookSetHarnessesResultResponse,
     HookSpecResponse,
+    PromoteHookRequest,
     ReconcileHookRequest,
     SetHookHarnessesRequest,
 )
@@ -220,6 +221,7 @@ __all__ = [
     "HookMutationResponse",
     "HookSetHarnessesResultResponse",
     "HookSpecResponse",
+    "PromoteHookRequest",
     "ReconcileHookRequest",
     "SetHookHarnessesRequest",
     "AddPermissionRequest",

@@ -4,6 +4,7 @@ export {
   useEnableHookMutation,
   useHooksInventoryQuery,
   useHookDetailQuery,
+  usePromoteHookMutation,
   useReconcileHookMutation,
   useSetHookHarnessesMutation,
   useUninstallHookMutation,

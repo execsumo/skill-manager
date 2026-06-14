@@ -13,6 +13,7 @@ from skill_manager.api.schemas import (
     HookMutationResponse,
     HookSetHarnessesResultResponse,
     OkResponse,
+    PromoteHookRequest,
     ReconcileHookRequest,
     SetHookHarnessesRequest,
 )
@@ -50,6 +51,18 @@ def create_hook(
     )
     stored = container.hooks_mutations.create_hook(spec)
     return {"ok": True, "hook": stored.to_dict()}
+
+
+@router.post("/{id}/promote", response_model=HookMutationResponse)
+def promote_hook(
+    id: str,
+    body: PromoteHookRequest,
+    container: BackendContainer = Depends(get_container),
+) -> dict[str, object]:
+    return container.hooks_mutations.promote_hook(
+        id,
+        observed_harness=body.observed_harness,
+    )
 
 
 @router.delete("/{id}", response_model=HookSetHarnessesResultResponse)

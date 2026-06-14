@@ -3428,6 +3428,24 @@
         "title": "PermissionSpecResponse",
         "type": "object"
       },
+      "PromoteHookRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "observedHarness": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed harness"
+          }
+        },
+        "title": "PromoteHookRequest",
+        "type": "object"
+      },
       "PromotePermissionRequest": {
         "additionalProperties": false,
         "properties": {
@@ -5674,6 +5692,55 @@
           }
         },
         "summary": "Enable Hook"
+      }
+    },
+    "/api/hooks/{id}/promote": {
+      "post": {
+        "operationId": "promote_hook_api_hooks__id__promote_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "title": "Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromoteHookRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HookMutationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Promote Hook"
       }
     },
     "/api/hooks/{id}/reconcile": {
