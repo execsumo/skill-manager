@@ -87,6 +87,17 @@ export function filterPermissionsInUse(
   });
 }
 
+export function filterPermissionsNeedsReview(
+  inventory: PermissionInventoryDto | null,
+  search = "",
+): PermissionInventoryEntryDto[] {
+  if (!inventory) return [];
+  const needle = search.trim();
+  return inventory.entries.filter(
+    (entry) => entry.kind === "unmanaged" && matchesSearch(entry, needle),
+  );
+}
+
 export function pillCounts(inventory: PermissionInventoryDto | null): Record<InUsePillValue, number> {
   if (!inventory) {
     return { all: 0, enabled: 0, "all-harnesses": 0, unbound: 0, drifted: 0 };

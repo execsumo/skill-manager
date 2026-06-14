@@ -3428,6 +3428,24 @@
         "title": "PermissionSpecResponse",
         "type": "object"
       },
+      "PromotePermissionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "observedHarness": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed harness"
+          }
+        },
+        "title": "PromotePermissionRequest",
+        "type": "object"
+      },
       "ReconcileHookRequest": {
         "additionalProperties": false,
         "properties": {
@@ -7006,6 +7024,55 @@
           }
         },
         "summary": "Enable Permission"
+      }
+    },
+    "/api/permissions/{id}/promote": {
+      "post": {
+        "operationId": "promote_permission_api_permissions__id__promote_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "title": "Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromotePermissionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PermissionMutationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Promote Permission"
       }
     },
     "/api/permissions/{id}/reconcile": {

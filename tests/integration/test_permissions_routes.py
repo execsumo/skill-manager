@@ -132,5 +132,46 @@ class PermissionRoutesTests(unittest.TestCase):
             self.assertNotIn("permissions", codex_cfg2)
 
 
+    def test_unmanaged_rule_is_readable_and_promotable(self) -> None:
+        with AppTestHarness() as harness:
+            # Seed an unmanaged rule directly in the Claude config.
+            claude_path = harness.spec.home / ".claude" / "settings.json"
+            claude_path.parent.mkdir(parents=True, exist_ok=True)
+            claude_path.write_text(
+                json.dumps({"permissions": {"allow": ["Bash(git status)"]}}),
+                encoding="utf-8",
+            )
+
+            payload = harness.get_json("/api/permissions")
+            entry = next(
+                e for e in payload["entries"]
+                if e.get("spec") and e["spec"].get("pattern") == "git status"
+            )
+            # Bug regression: unmanaged entries must carry a parsed spec and a
+            # human-readable name, not a bare "manual:<hash>" id.
+            self.assertEqual(entry["kind"], "unmanaged")
+            self.assertEqual(entry["spec"]["decision"], "allow")
+            self.assertEqual(entry["spec"]["scope"], "shell")
+            self.assertNotEqual(entry["displayName"], entry["id"])
+            self.assertIn("git status", entry["displayName"])
+
+            # Promote it into the managed manifest.
+            promoted = harness.post_json(
+                f"/api/permissions/{entry['id']}/promote",
+                {},
+            )
+            self.assertTrue(promoted["ok"])
+            self.assertEqual(promoted["permission"]["scope"], "shell")
+            self.assertEqual(promoted["permission"]["pattern"], "git status")
+
+            # The existing Claude binding is now reclassified as managed,
+            # without rewriting the harness config.
+            payload2 = harness.get_json("/api/permissions")
+            entry2 = next(e for e in payload2["entries"] if e["id"] == entry["id"])
+            self.assertEqual(entry2["kind"], "managed")
+            states = {s["harness"]: s["state"] for s in entry2["sightings"]}
+            self.assertEqual(states.get("claude"), "managed")
+
+
 if __name__ == "__main__":
     unittest.main()

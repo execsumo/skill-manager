@@ -4,6 +4,7 @@ export {
   useEnablePermissionMutation,
   usePermissionsInventoryQuery,
   usePermissionDetailQuery,
+  usePromotePermissionMutation,
   useReconcilePermissionMutation,
   useSetPermissionHarnessesMutation,
   useUninstallPermissionMutation,

@@ -41,6 +41,16 @@ class ReconcilePermissionRequest(BaseModel):
     harnesses: list[str] | None = None
 
 
+class PromotePermissionRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+    observed_harness: str | None = Field(
+        default=None,
+        alias="observedHarness",
+        title="Observed harness",
+    )
+
+
 class PermissionSpecResponse(BaseModel):
     id: str
     decision: str
@@ -126,6 +136,7 @@ __all__ = [
     "PermissionMutationResponse",
     "PermissionSetHarnessesResultResponse",
     "PermissionSpecResponse",
+    "PromotePermissionRequest",
     "ReconcilePermissionRequest",
     "SetPermissionHarnessesRequest",
 ]

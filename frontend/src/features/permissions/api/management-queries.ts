@@ -11,6 +11,7 @@ import {
   enablePermission,
   fetchPermissionsInventory,
   fetchPermissionDetail,
+  promotePermission,
   reconcilePermission,
   setPermissionHarnesses,
   uninstallPermission,
@@ -75,6 +76,14 @@ export function useCreatePermissionMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createPermission,
+    onSettled: () => invalidatePermissionsQueries(queryClient),
+  });
+}
+
+export function usePromotePermissionMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: promotePermission,
     onSettled: () => invalidatePermissionsQueries(queryClient),
   });
 }

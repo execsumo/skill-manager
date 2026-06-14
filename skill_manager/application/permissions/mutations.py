@@ -35,6 +35,27 @@ class PermissionsMutationService:
         self.read_models.invalidate()
         return stored
 
+    def promote_permission(
+        self,
+        id: str,
+        *,
+        observed_harness: str | None = None,
+    ) -> dict[str, object]:
+        """Adopt an unmanaged, harness-observed rule into the managed manifest.
+
+        The rule keeps its observed id so the next scan reclassifies the existing
+        harness binding from ``unmanaged`` to ``managed`` (no rewrite needed).
+        """
+        if self.store.get_managed(id) is not None:
+            raise MutationError(
+                f"permission '{id}' is already managed",
+                status=409,
+            )
+        spec = self._observed_spec_any(id, observed_harness)
+        stored = self.store.upsert_managed(replace(spec, id=id))
+        self.read_models.invalidate()
+        return {"ok": True, "permission": stored.to_dict()}
+
     def delete_permission(self, id: str) -> dict[str, object]:
         if self.store.get_managed(id) is None:
             raise MutationError(f"unknown permission: {id}", status=404)
@@ -160,6 +181,16 @@ class PermissionsMutationService:
                     if entry.id == id and entry.parsed_spec is not None:
                         return entry.parsed_spec
         raise MutationError(f"permission '{id}' was not observed in harness '{harness}'", status=400)
+
+    def _observed_spec_any(self, id: str, harness: str | None) -> PermissionSpec:
+        if harness is not None:
+            return self._observed_spec(id, harness)
+        snapshot = self.read_models.snapshot()
+        for scan in snapshot.harness_scans:
+            for entry in scan.entries:
+                if entry.id == id and entry.parsed_spec is not None:
+                    return entry.parsed_spec
+        raise MutationError(f"permission '{id}' was not observed in any harness", status=400)
 
     def _require_spec(self, id: str) -> PermissionSpec:
         spec = self.store.get_managed(id)

@@ -13,6 +13,7 @@ from skill_manager.api.schemas import (
     PermissionMutationResponse,
     PermissionSetHarnessesResultResponse,
     OkResponse,
+    PromotePermissionRequest,
     ReconcilePermissionRequest,
     SetPermissionHarnessesRequest,
 )
@@ -49,6 +50,18 @@ def create_permission(
     )
     stored = container.permissions_mutations.create_permission(spec)
     return {"ok": True, "permission": stored.to_dict()}
+
+
+@router.post("/{id}/promote", response_model=PermissionMutationResponse)
+def promote_permission(
+    id: str,
+    body: PromotePermissionRequest,
+    container: BackendContainer = Depends(get_container),
+) -> dict[str, object]:
+    return container.permissions_mutations.promote_permission(
+        id,
+        observed_harness=body.observed_harness,
+    )
 
 
 @router.delete("/{id}", response_model=PermissionSetHarnessesResultResponse)

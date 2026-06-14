@@ -58,6 +58,16 @@ export async function createPermission(body: {
   return postJson<PermissionMutationResponseDto>("/permissions", body);
 }
 
+export async function promotePermission(args: {
+  id: string;
+  observedHarness?: string | null;
+}): Promise<PermissionMutationResponseDto> {
+  return postJson<PermissionMutationResponseDto>(
+    `/permissions/${encodeURIComponent(args.id)}/promote`,
+    { observedHarness: args.observedHarness ?? null },
+  );
+}
+
 export async function reconcilePermission(args: {
   id: string;
   sourceKind: "managed" | "harness";

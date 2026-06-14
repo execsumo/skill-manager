@@ -117,6 +117,7 @@ from .permissions import (
     PermissionMutationResponse,
     PermissionSetHarnessesResultResponse,
     PermissionSpecResponse,
+    PromotePermissionRequest,
     ReconcilePermissionRequest,
     SetPermissionHarnessesRequest,
 )
@@ -234,6 +235,7 @@ __all__ = [
     "PermissionMutationResponse",
     "PermissionSetHarnessesResultResponse",
     "PermissionSpecResponse",
+    "PromotePermissionRequest",
     "ReconcilePermissionRequest",
     "SetPermissionHarnessesRequest",
 ]

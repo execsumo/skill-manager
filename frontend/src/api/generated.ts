@@ -537,6 +537,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/permissions/{id}/promote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Promote Permission */
+        post: operations["promote_permission_api_permissions__id__promote_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/permissions/{id}/reconcile": {
         parameters: {
             query?: never;
@@ -2131,6 +2148,11 @@ export interface components {
             revision: string;
             /** Scope */
             scope: string;
+        };
+        /** PromotePermissionRequest */
+        PromotePermissionRequest: {
+            /** Observed harness */
+            observedHarness?: string | null;
         };
         /** ReconcileHookRequest */
         ReconcileHookRequest: {
@@ -3981,6 +4003,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    promote_permission_api_permissions__id__promote_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PromotePermissionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PermissionMutationResponse"];
                 };
             };
             /** @description Validation Error */
