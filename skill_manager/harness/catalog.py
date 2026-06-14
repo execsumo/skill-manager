@@ -57,6 +57,12 @@ SUPPORTED_HARNESS_DEFINITIONS: tuple[HarnessDefinition, ...] = (
                 subtree_path=("mcp_servers",),
                 codec="codex",
             ),
+            "hooks": ConfigSubtreeBindingProfile(
+                config_path_resolver=lambda context: context.home / ".codex" / "config.toml",
+                file_format="toml",
+                subtree_path=("hooks",),
+                codec="codex-hooks",
+            ),
             "slash_commands": CommandFileBindingProfile(
                 root_path_resolver=lambda context: context.home / ".codex",
                 output_dir_resolver=lambda context: context.home / ".codex" / "prompts",
@@ -130,6 +136,12 @@ SUPPORTED_HARNESS_DEFINITIONS: tuple[HarnessDefinition, ...] = (
                 subtree_path=("mcpServers",),
                 codec="cursor",
             ),
+            "hooks": ConfigSubtreeBindingProfile(
+                config_path_resolver=lambda context: context.home / ".cursor" / "hooks.json",
+                file_format="json",
+                subtree_path=("hooks",),
+                codec="cursor-hooks",
+            ),
             "slash_commands": CommandFileBindingProfile(
                 root_path_resolver=lambda context: context.home / ".cursor",
                 output_dir_resolver=lambda context: context.home / ".cursor" / "commands",
@@ -179,6 +191,15 @@ SUPPORTED_HARNESS_DEFINITIONS: tuple[HarnessDefinition, ...] = (
                 file_format="jsonc",
                 subtree_path=("mcp",),
                 codec="opencode",
+            ),
+            "hooks": ConfigSubtreeBindingProfile(
+                config_path_resolver=lambda context: context.home / ".opencode" / "opencode.jsonc",
+                discovery_config_path_resolvers=(
+                    lambda context: context.xdg_config_home / "opencode" / "opencode.json",
+                ),
+                file_format="jsonc",
+                subtree_path=("experimental", "hook"),
+                codec="opencode-hooks",
             ),
             "slash_commands": CommandFileBindingProfile(
                 root_path_resolver=lambda context: context.xdg_config_home / "opencode",
@@ -255,6 +276,12 @@ SUPPORTED_HARNESS_DEFINITIONS: tuple[HarnessDefinition, ...] = (
                 file_format="json",
                 subtree_path=("mcpServers",),
                 codec="antigravity-cli",
+            ),
+            "hooks": ConfigSubtreeBindingProfile(
+                config_path_resolver=lambda context: context.home / ".gemini" / "config" / "hooks.json",
+                file_format="json",
+                subtree_path=(),
+                codec="antigravity-hooks",
             ),
         },
     ),
