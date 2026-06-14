@@ -16,13 +16,13 @@ class ClaudeCodeHooksMapperTests(unittest.TestCase):
     def test_representable(self) -> None:
         mapper = ClaudeCodeHooksMapper()
         # Supported event and match
-        is_repr, _ = mapper.representable(HookSpec("h1", "pre_tool_use", "echo", match="shell"))
+        is_repr, _, _ = mapper.representable(HookSpec("h1", "pre_tool_use", "echo", match="shell"))
         self.assertTrue(is_repr)
         # Unsupported event
-        is_repr, _ = mapper.representable(HookSpec("h1", "invalid_event", "echo"))
+        is_repr, _, _ = mapper.representable(HookSpec("h1", "invalid_event", "echo"))
         self.assertFalse(is_repr)
         # Unsupported match
-        is_repr, _ = mapper.representable(HookSpec("h1", "pre_tool_use", "echo", match="invalid_match"))
+        is_repr, _, _ = mapper.representable(HookSpec("h1", "pre_tool_use", "echo", match="invalid_match"))
         self.assertFalse(is_repr)
 
     def test_spec_to_dict_and_dict_to_spec(self) -> None:
@@ -72,9 +72,9 @@ class ClaudeCodeHooksMapperTests(unittest.TestCase):
 class CodexHooksMapperTests(unittest.TestCase):
     def test_representable(self) -> None:
         mapper = CodexHooksMapper()
-        is_repr, _ = mapper.representable(HookSpec("h1", "pre_tool_use", "echo", match="shell"))
+        is_repr, _, _ = mapper.representable(HookSpec("h1", "pre_tool_use", "echo", match="shell"))
         self.assertTrue(is_repr)
-        is_repr, _ = mapper.representable(HookSpec("h1", "invalid_event", "echo"))
+        is_repr, _, _ = mapper.representable(HookSpec("h1", "invalid_event", "echo"))
         self.assertFalse(is_repr)
 
 
@@ -82,10 +82,10 @@ class CursorHooksMapperTests(unittest.TestCase):
     def test_representable(self) -> None:
         mapper = CursorHooksMapper()
         # Shell is representable
-        is_repr, _ = mapper.representable(HookSpec("h1", "pre_tool_use", "echo", match="shell"))
+        is_repr, _, _ = mapper.representable(HookSpec("h1", "pre_tool_use", "echo", match="shell"))
         self.assertTrue(is_repr)
         # Web is not representable on Cursor
-        is_repr, _ = mapper.representable(HookSpec("h1", "pre_tool_use", "echo", match="web"))
+        is_repr, _, _ = mapper.representable(HookSpec("h1", "pre_tool_use", "echo", match="web"))
         self.assertFalse(is_repr)
 
     def test_enable_and_read_event_mapping(self) -> None:
@@ -130,13 +130,13 @@ class OpenCodeHooksMapperTests(unittest.TestCase):
     def test_representable(self) -> None:
         mapper = OpenCodeHooksMapper()
         # Stop is representable
-        is_repr, _ = mapper.representable(HookSpec("h1", "stop", "echo"))
+        is_repr, _, _ = mapper.representable(HookSpec("h1", "stop", "echo"))
         self.assertTrue(is_repr)
         # file_write is representable under post_tool_use
-        is_repr, _ = mapper.representable(HookSpec("h1", "post_tool_use", "echo", match="file_write"))
+        is_repr, _, _ = mapper.representable(HookSpec("h1", "post_tool_use", "echo", match="file_write"))
         self.assertTrue(is_repr)
         # shell is not representable on OpenCode
-        is_repr, _ = mapper.representable(HookSpec("h1", "pre_tool_use", "echo", match="shell"))
+        is_repr, _, _ = mapper.representable(HookSpec("h1", "pre_tool_use", "echo", match="shell"))
         self.assertFalse(is_repr)
 
     def test_enable_argv_wrapping_and_read(self) -> None:
@@ -161,13 +161,13 @@ class AntigravityHooksMapperTests(unittest.TestCase):
     def test_representable(self) -> None:
         mapper = AntigravityHooksMapper()
         # stop is representable
-        is_repr, _ = mapper.representable(HookSpec("h1", "stop", "echo"))
+        is_repr, _, _ = mapper.representable(HookSpec("h1", "stop", "echo"))
         self.assertTrue(is_repr)
         # shell is representable
-        is_repr, _ = mapper.representable(HookSpec("h1", "pre_tool_use", "echo", match="shell"))
+        is_repr, _, _ = mapper.representable(HookSpec("h1", "pre_tool_use", "echo", match="shell"))
         self.assertTrue(is_repr)
         # mcp is not representable
-        is_repr, _ = mapper.representable(HookSpec("h1", "pre_tool_use", "echo", match="mcp"))
+        is_repr, _, _ = mapper.representable(HookSpec("h1", "pre_tool_use", "echo", match="mcp"))
         self.assertFalse(is_repr)
 
     def test_enable_name_keyed_merge_and_read(self) -> None:
@@ -190,6 +190,62 @@ class AntigravityHooksMapperTests(unittest.TestCase):
         # Disable
         mapper.disable_hook(doc, "my-hook-id")
         self.assertNotIn("my-hook-id", doc)
+
+    def test_representable_caveat(self) -> None:
+        mapper = AntigravityHooksMapper()
+        is_repr, reason, caveat = mapper.representable(HookSpec("h1", "user_prompt_submit", "echo"))
+        self.assertTrue(is_repr)
+        self.assertIsNone(reason)
+        self.assertEqual(
+            caveat,
+            "On Antigravity this maps to PreInvocation, which fires before every model invocation, not only on user-prompt submit."
+        )
+
+    def test_preinvocation_round_trip(self) -> None:
+        mapper = AntigravityHooksMapper()
+        doc = {}
+        spec = HookSpec("user-hook", "user_prompt_submit", "echo 'hello world'", timeout=45)
+
+        # Enable hook
+        mapper.enable_hook(doc, spec)
+        self.assertIn("user-hook", doc)
+        self.assertTrue(doc["user-hook"]["enabled"])
+        self.assertIn("PreInvocation", doc["user-hook"])
+        self.assertEqual(doc["user-hook"]["PreInvocation"][0]["command"], "echo 'hello world'")
+        self.assertEqual(doc["user-hook"]["PreInvocation"][0]["timeout"], 45)
+
+        # Read back
+        entries = mapper.read_entries(doc, [spec])
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0].id, "user-hook")
+        self.assertEqual(entries[0].event, "user_prompt_submit")
+        self.assertIsNone(entries[0].match)
+        self.assertEqual(entries[0].payload["command"], "echo 'hello world'")
+
+        # Disable hook
+        mapper.disable_hook(doc, "user-hook")
+        self.assertNotIn("user-hook", doc)
+
+    def test_foreign_preservation(self) -> None:
+        mapper = AntigravityHooksMapper()
+        doc = {
+            "foreign-hook": {
+                "enabled": True,
+                "PreToolUse": [
+                    {
+                        "matcher": "*",
+                        "hooks": [{"type": "command", "command": "echo foreign"}]
+                    }
+                ]
+            }
+        }
+        spec = HookSpec("user-hook", "user_prompt_submit", "echo 'hello'")
+        mapper.enable_hook(doc, spec)
+
+        self.assertIn("foreign-hook", doc)
+        self.assertIn("user-hook", doc)
+        self.assertEqual(doc["foreign-hook"]["PreToolUse"][0]["hooks"][0]["command"], "echo foreign")
+        self.assertEqual(doc["user-hook"]["PreInvocation"][0]["command"], "echo 'hello'")
 
 
 if __name__ == "__main__":

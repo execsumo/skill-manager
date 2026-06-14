@@ -72,6 +72,7 @@ class HookBindingResponse(BaseModel):
     harness: str
     state: Literal["managed", "drifted", "unmanaged", "missing", "unsupported"]
     driftDetail: str | None = None
+    caveat: str | None = None
 
 
 class HookInventoryEntryResponse(BaseModel):

@@ -32,6 +32,7 @@ def build_inventory(
                 id=entry.id,
                 state=entry.state,
                 drift_detail=entry.drift_detail,
+                caveat=entry.caveat,
             )
             bindings_by_id.setdefault(entry.id, []).append(binding)
 

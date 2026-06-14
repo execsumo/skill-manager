@@ -71,6 +71,8 @@ def _binding_to_dict(binding: HookBinding) -> dict[str, object]:
     }
     if binding.drift_detail:
         payload["driftDetail"] = binding.drift_detail
+    if binding.caveat:
+        payload["caveat"] = binding.caveat
     return payload
 
 

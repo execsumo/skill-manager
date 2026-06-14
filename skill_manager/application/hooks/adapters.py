@@ -110,7 +110,7 @@ class FileBackedHooksAdapter(HookHarnessAdapter):
                 )
                 continue
 
-            is_repr, reason = self._mapper.representable(managed_spec)
+            is_repr, reason, caveat = self._mapper.representable(managed_spec)
             if not is_repr:
                 entries.append(
                     HookObservedEntry(
@@ -120,6 +120,7 @@ class FileBackedHooksAdapter(HookHarnessAdapter):
                         raw_payload=dict(raw.payload),
                         parsed_spec=parsed_spec,
                         drift_detail=reason,
+                        caveat=caveat,
                     )
                 )
                 continue
@@ -134,6 +135,7 @@ class FileBackedHooksAdapter(HookHarnessAdapter):
                         state="managed",
                         raw_payload=dict(raw.payload),
                         parsed_spec=parsed_spec,
+                        caveat=caveat,
                     )
                 )
             else:
@@ -152,13 +154,14 @@ class FileBackedHooksAdapter(HookHarnessAdapter):
                         raw_payload=dict(raw.payload),
                         parsed_spec=parsed_spec,
                         drift_detail="; ".join(drift_parts) or "value mismatch",
+                        caveat=caveat,
                     )
                 )
 
         for spec in specs:
             if spec.id in seen_ids:
                 continue
-            is_repr, reason = self._mapper.representable(spec)
+            is_repr, reason, caveat = self._mapper.representable(spec)
             if not is_repr:
                 entries.append(
                     HookObservedEntry(
@@ -167,6 +170,7 @@ class FileBackedHooksAdapter(HookHarnessAdapter):
                         state="unsupported",
                         parsed_spec=spec,
                         drift_detail=reason,
+                        caveat=caveat,
                     )
                 )
             else:
@@ -176,6 +180,7 @@ class FileBackedHooksAdapter(HookHarnessAdapter):
                         event=spec.event,
                         state="missing",
                         parsed_spec=spec,
+                        caveat=caveat,
                     )
                 )
 
@@ -203,7 +208,7 @@ class FileBackedHooksAdapter(HookHarnessAdapter):
         return any(raw.id == id for raw in self._read_entries(specs))
 
     def enable_hook(self, spec: HookSpec) -> None:
-        is_repr, reason = self._mapper.representable(spec)
+        is_repr, reason, caveat = self._mapper.representable(spec)
         if not is_repr:
             raise MutationError(f"Hook not supported on {self.label}: {reason}", status=400)
 
