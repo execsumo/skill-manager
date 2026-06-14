@@ -7,7 +7,7 @@ from typing import Literal, Protocol
 from .store import HookSpec
 
 
-BindingState = Literal["managed", "drifted", "unmanaged", "missing"]
+BindingState = Literal["managed", "drifted", "unmanaged", "missing", "unsupported"]
 
 
 @dataclass(frozen=True)

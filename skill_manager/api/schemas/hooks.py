@@ -13,7 +13,7 @@ class AddHookRequest(BaseModel):
     id: str = Field(..., min_length=1)
     event: str = Field(..., min_length=1)
     command: str = Field(..., min_length=1)
-    matcher: str | None = None
+    match: str | None = None
     timeout: int | None = None
     description: str = ""
 
@@ -46,7 +46,7 @@ class HookSpecResponse(BaseModel):
     id: str
     event: str
     command: str
-    matcher: str | None = None
+    match: str | None = None
     timeout: int | None = None
     description: str
     installedAt: str
@@ -70,7 +70,7 @@ class HookInventoryIssueResponse(BaseModel):
 
 class HookBindingResponse(BaseModel):
     harness: str
-    state: Literal["managed", "drifted", "unmanaged", "missing"]
+    state: Literal["managed", "drifted", "unmanaged", "missing", "unsupported"]
     driftDetail: str | None = None
 
 

@@ -27,7 +27,7 @@ class HookSpec:
     id: str
     event: str
     command: str
-    matcher: str | None = None
+    match: str | None = None
     timeout: int | None = None
     description: str = ""
     installed_at: str = ""
@@ -42,19 +42,45 @@ class HookSpec:
             "installedAt": self.installed_at,
             "revision": self.revision,
         }
-        if self.matcher is not None:
-            payload["matcher"] = self.matcher
+        if self.match is not None:
+            payload["match"] = self.match
         if self.timeout is not None:
             payload["timeout"] = self.timeout
         return payload
 
     @classmethod
     def from_dict(cls, payload: Mapping[str, object]) -> HookSpec:
+        event = str(payload["event"])
+        event_map = {
+            "PreToolUse": "pre_tool_use",
+            "PostToolUse": "post_tool_use",
+            "UserPromptSubmit": "user_prompt_submit",
+            "SessionStart": "session_start",
+            "Stop": "stop",
+            "PreCompact": "pre_compact",
+        }
+        event = event_map.get(event, event)
+
+        match = _optional_str(payload.get("match"))
+        matcher = _optional_str(payload.get("matcher"))
+        if match is None and matcher is not None:
+            matcher_map = {
+                "Bash": "shell",
+                "Read": "file_read",
+                "Edit|Write": "file_write",
+                "Edit": "file_write",
+                "Write": "file_write",
+                "mcp__.*": "mcp",
+                "WebFetch": "web",
+                "*": "any",
+            }
+            match = matcher_map.get(matcher, matcher)
+
         return cls(
             id=str(payload["id"]),
-            event=str(payload["event"]),
+            event=event,
             command=str(payload["command"]),
-            matcher=_optional_str(payload.get("matcher")),
+            match=match,
             timeout=_optional_int(payload.get("timeout")),
             description=str(payload.get("description", "")),
             installed_at=str(payload.get("installedAt", "")),
@@ -98,7 +124,7 @@ def compute_revision(spec: HookSpec) -> str:
         "id": spec.id,
         "event": spec.event,
         "command": spec.command,
-        "matcher": spec.matcher,
+        "match": spec.match,
         "timeout": spec.timeout,
     }
     digest = hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()
