@@ -90,6 +90,12 @@ SUPPORTED_HARNESS_DEFINITIONS: tuple[HarnessDefinition, ...] = (
                 ),
                 codec="claude-code",
             ),
+            "hooks": ConfigSubtreeBindingProfile(
+                config_path_resolver=lambda context: context.home / ".claude" / "settings.json",
+                file_format="json",
+                subtree_path=("hooks",),
+                codec="claude-code-hooks",
+            ),
             "slash_commands": CommandFileBindingProfile(
                 root_path_resolver=lambda context: context.home / ".claude",
                 output_dir_resolver=lambda context: context.home / ".claude" / "commands",
