@@ -134,6 +134,7 @@ skill-manager start
 ```
 
 npm wrapper 会为当前平台和 CPU 架构下载对应的原生 release artifact。
+GitHub Releases 会发布 macOS ARM64/x64 和 Linux x64/ARM64 的原生 release artifact。
 
 ## 支持的 harness
 

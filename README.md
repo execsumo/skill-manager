@@ -134,6 +134,7 @@ skill-manager start
 ```
 
 The npm wrapper downloads the native release artifact for the current platform and CPU architecture.
+Native release artifacts are published on GitHub Releases for macOS ARM64/x64 and Linux x64/ARM64.
 
 ## Supported harnesses
 
