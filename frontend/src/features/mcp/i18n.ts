@@ -16,6 +16,7 @@ const englishMcpCopy = {
     emptyBody: "Install one from the marketplace, or adopt an existing entry from a harness config.",
     viewModes: {
       cards: "Cards",
+      board: "Board",
       matrix: "Matrix",
     },
     filters: {
@@ -230,6 +231,7 @@ export const mcpCopy = {
       emptyBody: "从商城安装一个，或从 harness 配置中采用现有条目。",
       viewModes: {
         cards: "卡片",
+        board: "看板",
         matrix: "矩阵",
       },
       filters: {

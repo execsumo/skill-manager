@@ -112,7 +112,7 @@ export function useSidebarModel(): SidebarModel {
         {
           key: "hooks",
           label: "Hooks",
-          iconKey: "mcp",
+          iconKey: "hooks",
           count: hooksCounts.total,
           links: [
             { key: "hooks-use", to: hooksRoutes.inUse, label: common.productLanguage.inUse, count: hooksCounts.inUse },

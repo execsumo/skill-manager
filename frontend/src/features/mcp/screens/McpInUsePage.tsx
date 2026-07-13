@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { Grid2X2, Rows3 } from "lucide-react";
+import { Columns3, Grid2X2, Rows3 } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { BulkActionBar } from "../../../components/BulkActionBar";
@@ -12,6 +12,7 @@ import { ViewModeToggle, type ViewModeOption } from "../../../components/ViewMod
 import { McpServerDetailSheet } from "../components/detail/McpServerDetailSheet";
 import { McpInstallConfigDialog } from "../components/config/McpInstallConfigDialog";
 import { McpFilterMenu } from "../components/McpFilterMenu";
+import { McpServerBoard } from "../components/board/McpServerBoard";
 import { McpServerCardList } from "../components/McpServerCardList";
 import { McpServerMatrixView } from "../components/McpServerMatrixView";
 import type { McpInventoryEntryDto } from "../api/management-types";
@@ -77,6 +78,7 @@ export default function McpInUsePage() {
   const viewModeOptions: readonly ViewModeOption<McpInUseViewMode>[] = useMemo(
     () => [
       { value: "cards", label: copy.inUse.viewModes.cards, icon: Grid2X2 },
+      { value: "board", label: copy.inUse.viewModes.board, icon: Columns3 },
       { value: "matrix", label: copy.inUse.viewModes.matrix, icon: Rows3 },
     ],
     [copy],
@@ -263,7 +265,17 @@ export default function McpInUsePage() {
         <div className="panel-state">{queryErrorMessage || copy.inUse.unableToLoad}</div>
       ) : isReady && inventory ? (
         entries.length > 0 ? (
-          viewMode === "matrix" ? (
+          viewMode === "board" ? (
+            <McpServerBoard
+              entries={entries}
+              columns={inventory.columns}
+              pendingServerKeys={pendingServerKeys}
+              checkedNames={multiSelectedNames}
+              onOpenDetail={setDetailName}
+              onToggleChecked={handleToggleMultiSelect}
+              onSetHarnesses={handleCardSetHarnesses}
+            />
+          ) : viewMode === "matrix" ? (
             <McpServerMatrixView
               entries={entries}
               columns={inventory.columns}

@@ -14,6 +14,7 @@ const englishHooksCopy = {
     emptyBody: "Add a hook or enable one to see it here.",
     viewModes: {
       cards: "Cards",
+      board: "Board",
       matrix: "Matrix",
     },
     filters: {

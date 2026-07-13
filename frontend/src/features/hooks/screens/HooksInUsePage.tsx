@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { Grid2X2, Rows3, Plus } from "lucide-react";
+import { Columns3, Grid2X2, Rows3, Plus } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 
 import { ConfirmActionDialog } from "../../../components/ConfirmActionDialog";
@@ -11,6 +11,7 @@ import { ViewModeToggle, type ViewModeOption } from "../../../components/ViewMod
 import { useCommonCopy } from "../../../i18n";
 import { useHooksCopy } from "../i18n";
 import { HookCardList } from "../components/HookCardList";
+import { HooksBoard } from "../components/board/HooksBoard";
 import { HooksMatrixView } from "../components/HooksMatrixView";
 import { HookDetailSheet } from "../components/detail/HookDetailSheet";
 import { HookFormDialog } from "../components/edit/HookFormDialog";
@@ -59,6 +60,7 @@ export default function HooksInUsePage() {
   const viewModeOptions: readonly ViewModeOption<HooksInUseViewMode>[] = useMemo(
     () => [
       { value: "cards", label: copy.inUse.viewModes.cards, icon: Grid2X2 },
+      { value: "board", label: copy.inUse.viewModes.board, icon: Columns3 },
       { value: "matrix", label: copy.inUse.viewModes.matrix, icon: Rows3 },
     ],
     [copy],
@@ -175,7 +177,19 @@ export default function HooksInUsePage() {
         <div className="panel-state">{queryErrorMessage || copy.inUse.unableToLoad}</div>
       ) : isReady && inventory ? (
         entries.length > 0 ? (
-          viewMode === "matrix" ? (
+          viewMode === "board" ? (
+            <HooksBoard
+              entries={entries}
+              columns={inventory.columns}
+              pendingHookKeys={pendingHookKeys}
+              checkedIds={new Set()}
+              onOpenDetail={setDetailId}
+              onToggleChecked={() => {}}
+              onSetHarnesses={(id, target) => {
+                void handleSetHookHarnesses(id, target);
+              }}
+            />
+          ) : viewMode === "matrix" ? (
             <HooksMatrixView
               entries={entries}
               columns={inventory.columns}

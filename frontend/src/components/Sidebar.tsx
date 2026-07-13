@@ -21,6 +21,7 @@ import {
   Store,
   SunMedium,
   Terminal,
+  Webhook,
 } from "lucide-react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 
@@ -174,6 +175,7 @@ function sidebarIcon(iconKey: SidebarIconKey): ReactNode {
   if (iconKey === "skills") return <BookOpen size={16} />;
   if (iconKey === "slash-commands") return <Command size={16} />;
   if (iconKey === "mcp") return <Terminal size={16} />;
+  if (iconKey === "hooks") return <Webhook size={16} />;
   if (iconKey === "marketplace") return <Store size={16} />;
   return <LayoutDashboard size={16} />;
 }
