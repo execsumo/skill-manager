@@ -303,6 +303,34 @@ SUPPORTED_HARNESS_DEFINITIONS: tuple[HarnessDefinition, ...] = (
             ),
         },
     ),
+    HarnessDefinition(
+        harness="hermes",
+        label="Hermes Agent",
+        logo_key="hermes",
+        install_probe="hermes",
+        bindings={
+            "skills": FileTreeBindingProfile(
+                managed_env="SKILL_MANAGER_HERMES_ROOT",
+                managed_default=lambda context: context.home / ".hermes" / "skills",
+            ),
+            "mcp": ConfigSubtreeBindingProfile(
+                config_path_resolver=lambda context: context.home / ".hermes" / "mcp.json",
+                file_format="json",
+                subtree_path=("mcpServers",),
+                codec="hermes",
+            ),
+            "slash_commands": CommandFileBindingProfile(
+                root_path_resolver=lambda context: context.home / ".hermes",
+                output_dir_resolver=lambda context: context.home / ".hermes" / "commands",
+                invocation_prefix="/",
+                render_format="frontmatter_markdown",
+                scope="global",
+                docs_url="",
+                file_glob="*.md",
+                supports_frontmatter=True,
+            ),
+        },
+    ),
 )
 
 

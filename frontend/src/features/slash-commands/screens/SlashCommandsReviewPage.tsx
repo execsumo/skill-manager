@@ -5,6 +5,7 @@ import { PageHeader } from "../../../components/PageHeader";
 import { NeedsReviewRow } from "../../../components/cards/NeedsReviewRow";
 import { UiTooltip } from "../../../components/ui/UiTooltip";
 import { getHarnessPresentation } from "../../../components/harness/harnessPresentation";
+import { useFormatPath } from "../../../lib/paths";
 import { SlashCommandReviewDetailSheet } from "../components/detail/SlashCommandReviewDetailSheet";
 import { useSlashCommandsCopy, type SlashCommandsCopy } from "../i18n";
 import {
@@ -128,6 +129,7 @@ function SlashCommandReviewRow({
 }) {
   const primaryAction = primaryReviewAction(row);
   const secondaryActions = row.actions.filter((action) => action !== primaryAction);
+  const formatPath = useFormatPath();
   const presentation = getHarnessPresentation(row.target === "claude" ? "claude" : row.target);
   const logo = (
     <UiTooltip content={row.targetLabel}>
@@ -167,7 +169,7 @@ function SlashCommandReviewRow({
           </span>
         ) : undefined
       }
-      description={row.description || row.path}
+      description={row.description || formatPath(row.path)}
       actionLabel={copy.review.actionLabel(primaryAction)}
       actionTitle={primaryAction ? copy.review.actionTitle(primaryAction) : row.error ?? copy.review.cannotUpdate}
       pending={primaryAction ? pendingKey === reviewKey(row.target, row.name, primaryAction) : false}

@@ -10,4 +10,7 @@ router = APIRouter(prefix="/api")
 
 @router.get("/health")
 def health(container: BackendContainer = Depends(get_container)) -> dict[str, object]:
-    return container.skills_queries.health()
+    payload = container.skills_queries.health()
+    # Home dir lets the frontend abbreviate displayed paths to ``~/…`` uniformly.
+    payload["homeDir"] = str(container.harness_kernel.context.home)
+    return payload

@@ -28,11 +28,11 @@ class HttpApiTests(unittest.TestCase):
                 settings["storage"]["settingsPath"],
                 str(harness.spec.xdg_config_home / "skill-manager" / "settings.json"),
             )
-            self.assertEqual(len(settings["harnesses"]), 6)
+            self.assertEqual(len(settings["harnesses"]), 7)
             openclaw = next(item for item in settings["harnesses"] if item["harness"] == "openclaw")
             self.assertTrue(openclaw["installed"])
             self.assertTrue(openclaw["supportEnabled"])
-            self.assertEqual(openclaw["managedLocation"], str(harness.spec.home / ".openclaw" / "skills"))
+            self.assertEqual(openclaw["managedLocation"], str(harness.spec.home / ".openclaw"))
             self.assertNotIn("discoveryMode", openclaw)
             self.assertNotIn("centralStore", settings)
             self.assertNotIn("topology", settings)
@@ -49,7 +49,7 @@ class HttpApiTests(unittest.TestCase):
             openclaw = next(item for item in settings["harnesses"] if item["harness"] == "openclaw")
             self.assertFalse(openclaw["installed"])
             self.assertTrue(openclaw["supportEnabled"])
-            self.assertEqual(openclaw["managedLocation"], str(harness.spec.home / ".openclaw" / "skills"))
+            self.assertEqual(openclaw["managedLocation"], str(harness.spec.home / ".openclaw"))
 
     def test_settings_support_toggle_hides_disabled_harness_from_skills_inventory(self) -> None:
         with AppTestHarness(mixed=True) as harness:
@@ -84,7 +84,7 @@ class HttpApiTests(unittest.TestCase):
             self.assertEqual(detail["displayStatus"], "Managed")
             self.assertEqual(
                 [cell["label"] for cell in detail["harnessCells"]],
-                ["Codex", "Claude", "Cursor", "OpenCode", "OpenClaw", "Antigravity"],
+                ["Codex", "Claude", "Cursor", "OpenCode", "OpenClaw", "Antigravity", "Hermes Agent"],
             )
             self.assertNotIn("updateStatus", detail["actions"])
             self.assertEqual(source_status["updateStatus"], "no_update_available")

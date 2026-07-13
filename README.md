@@ -1,7 +1,5 @@
 # skill-manager
 
-[中文说明](README.zh-CN.md)
-
 <p align="center">
   <img src="assets/skill_manager_logo.svg" alt="Skill Manager" width="520" />
 </p>
@@ -170,6 +168,11 @@ The npm wrapper downloads the native release artifact for the current platform a
       <strong>Antigravity (agy)</strong><br />
       <a href="https://antigravity.google">Docs</a>
     </td>
+    <td align="center" valign="middle">
+      <img src="assets/harness-logos/hermes-logo.svg" alt="Hermes Agent" height="56" /><br />
+      <strong>Hermes Agent</strong><br />
+      <a href="https://lobehub.com/icons/hermesagent">Docs</a>
+    </td>
   </tr>
 </table>
 
@@ -181,6 +184,9 @@ The npm wrapper downloads the native release artifact for the current platform a
 | OpenCode | Yes | Yes | Yes | Partial |
 | OpenClaw | Yes | Not Yet | Not Yet | Not Yet |
 | Antigravity (agy) | Yes | Yes | Not Yet | Partial |
+| Hermes Agent | Yes | Yes* | Yes* | Not Yet |
+
+<sub>\* Hermes Agent support is provisional. Its MCP config (`~/.hermes/mcp.json`, `mcpServers`) and slash-command directory (`~/.hermes/commands`, frontmatter Markdown) follow common conventions but are **not yet verified against a shipping Hermes build**; hooks are not yet mapped. See `handoff.md`.</sub>
 
 ## Local-first safety
 

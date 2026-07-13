@@ -4877,7 +4877,8 @@
               "opencode",
               "claude",
               "cursor",
-              "codex"
+              "codex",
+              "hermes"
             ],
             "title": "Target",
             "type": "string"
@@ -4905,7 +4906,8 @@
                 "opencode",
                 "claude",
                 "cursor",
-                "codex"
+                "codex",
+                "hermes"
               ],
               "type": "string"
             },
@@ -4971,7 +4973,8 @@
                     "opencode",
                     "claude",
                     "cursor",
-                    "codex"
+                    "codex",
+                    "hermes"
                   ],
                   "type": "string"
                 },
@@ -5045,7 +5048,8 @@
               "opencode",
               "claude",
               "cursor",
-              "codex"
+              "codex",
+              "hermes"
             ],
             "title": "Target",
             "type": "string"
@@ -5158,7 +5162,8 @@
               "opencode",
               "claude",
               "cursor",
-              "codex"
+              "codex",
+              "hermes"
             ],
             "title": "Target",
             "type": "string"
@@ -5204,7 +5209,8 @@
                     "opencode",
                     "claude",
                     "cursor",
-                    "codex"
+                    "codex",
+                    "hermes"
                   ],
                   "type": "string"
                 },
@@ -5260,7 +5266,8 @@
               "opencode",
               "claude",
               "cursor",
-              "codex"
+              "codex",
+              "hermes"
             ],
             "title": "Target",
             "type": "string"
@@ -5284,7 +5291,8 @@
                     "opencode",
                     "claude",
                     "cursor",
-                    "codex"
+                    "codex",
+                    "hermes"
                   ],
                   "type": "string"
                 },
@@ -5327,7 +5335,8 @@
               "opencode",
               "claude",
               "cursor",
-              "codex"
+              "codex",
+              "hermes"
             ],
             "title": "Id",
             "type": "string"

@@ -14,6 +14,7 @@ import ScanConfigPage from "./features/skills/screens/ScanConfigPage";
 import SkillsWorkspacePage from "./features/skills/screens/SkillsWorkspacePage";
 import { LocaleProvider, useCommonCopy } from "./i18n";
 
+import { HomeDirProvider } from "./lib/paths";
 import { ThemeProvider } from "./lib/theme";
 
 const MarketplaceLayout = lazy(() => import("./features/marketplace/components/MarketplaceLayout"));
@@ -46,7 +47,9 @@ export function App() {
         <LocaleProvider>
           <ToastProvider>
             <UiTooltipProvider>
-              <AppContent />
+              <HomeDirProvider>
+                <AppContent />
+              </HomeDirProvider>
             </UiTooltipProvider>
           </ToastProvider>
         </LocaleProvider>

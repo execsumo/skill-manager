@@ -91,6 +91,10 @@ class CursorMapper(_TypedMcpServersMapper):
     observed_harness = "cursor"
 
 
+class HermesMapper(_TypedMcpServersMapper):
+    observed_harness = "hermes"
+
+
 # OpenCode -----------------------------------------------------------------
 
 
@@ -350,6 +354,7 @@ _MAPPERS: dict[str, TransportMapper] = {
     "codex": CodexMapper(),
     "openclaw": OpenClawMapper(),
     "antigravity-cli": AntigravityCliMapper(),
+    "hermes": HermesMapper(),
 }
 
 
@@ -364,6 +369,7 @@ __all__ = [
     "ClaudeCodeMapper",
     "CodexMapper",
     "CursorMapper",
+    "HermesMapper",
     "OpenClawMapper",
     "OpenCodeMapper",
     "TransportMapper",
