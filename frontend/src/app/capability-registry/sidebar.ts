@@ -9,13 +9,17 @@ import { hooksRoutes, useHooksInventoryQuery } from "../../features/hooks/public
 import { permissionsRoutes, usePermissionsInventoryQuery } from "../../features/permissions/public";
 import { useCommonCopy } from "../../i18n";
 
-export type SidebarIconKey = "overview" | "skills" | "slash-commands" | "mcp" | "marketplace" | "hooks" | "permissions";
+export type SidebarIconKey = "overview" | "skills" | "slash-commands" | "mcp" | "marketplace" | "hooks" | "permissions" | "agents";
 
 export interface SidebarLinkModel {
   key: string;
   to: string;
   label: string;
   count?: number | null;
+}
+
+export interface SidebarTopLinkModel extends SidebarLinkModel {
+  iconKey: SidebarIconKey;
 }
 
 export interface SidebarGroupModel {
@@ -27,7 +31,7 @@ export interface SidebarGroupModel {
 }
 
 export interface SidebarModel {
-  topLinks: SidebarLinkModel[];
+  topLinks: SidebarTopLinkModel[];
   groups: SidebarGroupModel[];
 }
 
@@ -55,6 +59,13 @@ export function useSidebarModel(): SidebarModel {
           key: "overview",
           to: "/overview",
           label: common.nav.overview,
+          iconKey: "overview",
+        },
+        {
+          key: "agents",
+          to: "/agents",
+          label: "Agents",
+          iconKey: "agents",
         },
       ],
       groups: [

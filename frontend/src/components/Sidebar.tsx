@@ -22,6 +22,7 @@ import {
   SunMedium,
   Terminal,
   Webhook,
+  Bot,
 } from "lucide-react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 
@@ -56,7 +57,7 @@ export function Sidebar({ onRefresh, refreshPending }: SidebarProps) {
             key={link.key}
             to={link.to}
             label={link.label}
-            icon={<LayoutDashboard size={16} />}
+            icon={sidebarIcon(link.iconKey)}
           />
         ))}
 
@@ -177,6 +178,7 @@ function sidebarIcon(iconKey: SidebarIconKey): ReactNode {
   if (iconKey === "mcp") return <Terminal size={16} />;
   if (iconKey === "hooks") return <Webhook size={16} />;
   if (iconKey === "marketplace") return <Store size={16} />;
+  if (iconKey === "agents") return <Bot size={16} />;
   return <LayoutDashboard size={16} />;
 }
 
