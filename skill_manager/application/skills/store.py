@@ -6,7 +6,7 @@ from pathlib import Path
 from skill_manager.atomic_files import file_lock
 
 from .health import CheckIssue
-from .identity import SourceDescriptor
+from .identity import SourceDescriptor, SkillRef
 from .manifest import (
     SkillStoreEntry,
     SkillStoreManifest,
@@ -15,18 +15,85 @@ from .manifest import (
 )
 from .observations import SkillStoreScan, StorePackageObservation
 from .package import find_skill_roots, fingerprint_package, parse_skill_package
+from skill_manager.application.packages import load_package_meta, list_package_dirs
 
 
 class SkillStore:
-    def __init__(self, root: Path, manifest_path: Path | None = None) -> None:
+    def __init__(self, root: Path, manifest_path: Path | None = None, packages_root: Path | None = None) -> None:
         self.root = root
         self.manifest_path = manifest_path or root.parent / "manifest.json"
+        self.packages_root = packages_root
 
     @property
     def lock_path(self) -> Path:
         return self.manifest_path.with_suffix(".lock")
 
+    def _ensure_mutable(self) -> None:
+        try:
+            meta = load_package_meta(self.root.parent / "package.json")
+            if not meta.mutable:
+                raise ValueError("Target package is not mutable")
+        except FileNotFoundError:
+            pass
+
     def scan(self) -> SkillStoreScan:
+        if self.packages_root:
+            return self._scan_multi()
+        return self._scan_single()
+
+    def _scan_multi(self) -> SkillStoreScan:
+        all_packages: list[StorePackageObservation] = []
+        issues: list[str] = list(issue.message for issue in self.check_integrity())
+        seen_refs: dict[str, str] = {}
+        for pkg_dir in list_package_dirs(self.packages_root):
+            try:
+                meta = load_package_meta(pkg_dir / "package.json")
+                if not meta.active:
+                    continue
+            except Exception:
+                continue
+
+            skills_dir = pkg_dir / "skills"
+            manifest_path = pkg_dir / "manifest.json"
+            if not skills_dir.exists():
+                continue
+            manifest = load_skill_store_manifest(manifest_path)
+            manifest_index = {entry.package_dir: entry for entry in manifest.entries}
+
+            for path in find_skill_roots(skills_dir):
+                entry = manifest_index.get(path.name)
+                source = SourceDescriptor(
+                    kind=entry.source_kind if entry else "shared-store",
+                    locator=entry.source_locator if entry else f"shared-store:{path.name}",
+                )
+                pkg = parse_skill_package(path, default_source=source)
+                ref = SkillRef(source, pkg.declared_name).value
+
+                if ref in seen_refs:
+                    issues.append(f"Duplicate skill ref {ref} in packages '{seen_refs[ref]}' and '{meta.slug}'")
+                    if seen_refs[ref] == "local" and meta.slug != "local":
+                        continue
+                    if meta.slug == "local":
+                        all_packages = [
+                            p for p in all_packages 
+                            if not (SkillRef(p.package.source, p.package.declared_name).value == ref and p.owning_package_slug == seen_refs[ref])
+                        ]
+
+                seen_refs[ref] = meta.slug
+                all_packages.append(
+                    StorePackageObservation(
+                        package=pkg,
+                        recorded_revision=entry.revision if entry else None,
+                        recorded_source_ref=entry.source_ref if entry else None,
+                        recorded_source_path=entry.source_path if entry else None,
+                        origin_harness=entry.origin_harness if entry else None,
+                        owning_package_slug=meta.slug,
+                    )
+                )
+
+        return SkillStoreScan(packages=tuple(all_packages), issues=tuple(issues))
+
+    def _scan_single(self) -> SkillStoreScan:
         manifest = load_skill_store_manifest(self.manifest_path)
         manifest_index = {entry.package_dir: entry for entry in manifest.entries}
         packages: list[StorePackageObservation] = []
@@ -61,6 +128,7 @@ class SkillStore:
         source_path_hint: str | None = None,
         origin_harness: str | None = None,
     ) -> Path:
+        self._ensure_mutable()
         self.root.mkdir(parents=True, exist_ok=True)
         with file_lock(self.lock_path):
             dest = self.root / source_path.name
@@ -93,6 +161,7 @@ class SkillStore:
         source_ref: str | None = None,
         source_path_hint: str | None = None,
     ) -> tuple[Path, bool]:
+        self._ensure_mutable()
         with file_lock(self.lock_path):
             dest = self.root / package_dir
             if not dest.is_dir():
@@ -126,6 +195,7 @@ class SkillStore:
             return dest, True
 
     def delete(self, package_dir: str) -> None:
+        self._ensure_mutable()
         with file_lock(self.lock_path):
             self.ensure_deletable(package_dir)
             dest = self.root / package_dir
@@ -147,17 +217,29 @@ class SkillStore:
 
     def check_integrity(self) -> tuple[CheckIssue, ...]:
         issues: list[CheckIssue] = []
-        if not self.root.exists():
-            return ()
-        for path in sorted(self.root.iterdir()):
-            if path.is_dir() and not (path / "SKILL.md").is_file():
-                issues.append(
-                    CheckIssue(
-                        severity="error",
-                        code="shared-missing-skill-md",
-                        message=f"Shared package is missing SKILL.md: {path.name}",
+        roots_to_check = [self.root]
+        if self.packages_root:
+            roots_to_check = []
+            for pkg_dir in list_package_dirs(self.packages_root):
+                try:
+                    meta = load_package_meta(pkg_dir / "package.json")
+                    if meta.active:
+                        roots_to_check.append(pkg_dir / "skills")
+                except Exception:
+                    pass
+
+        for root in roots_to_check:
+            if not root.exists():
+                continue
+            for path in sorted(root.iterdir()):
+                if path.is_dir() and not (path / "SKILL.md").is_file():
+                    issues.append(
+                        CheckIssue(
+                            severity="error",
+                            code="shared-missing-skill-md",
+                            message=f"Shared package is missing SKILL.md: {path.name}",
+                        )
                     )
-                )
         return tuple(issues)
 
 

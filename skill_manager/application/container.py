@@ -9,6 +9,9 @@ from skill_manager.harness import HarnessKernelService, HarnessSupportStore
 from skill_manager.paths import AppPaths, resolve_app_paths
 
 from .scaffold import ScaffoldService
+from .packages import PackageMeta, write_package_meta
+from skill_manager.atomic_files import file_lock
+import shutil
 
 from .cli_marketplace import CliMarketplaceCatalog
 from .invalidation import InvalidationFanout
@@ -102,6 +105,43 @@ class BackendContainer:
     scaffold_service: ScaffoldService
 
 
+def _migrate_to_packages(data_dir: Path, packages_root: Path) -> None:
+    legacy_shared = data_dir / "shared"
+    legacy_manifest = data_dir / "manifest.json"
+    local_pkg_dir = packages_root / "local"
+
+    packages_root.mkdir(parents=True, exist_ok=True)
+    lock_path = packages_root / ".migration.lock"
+
+    with file_lock(lock_path):
+        if not (local_pkg_dir / "package.json").exists():
+            local_pkg_dir.mkdir(parents=True, exist_ok=True)
+            local_skills = local_pkg_dir / "skills"
+            if legacy_shared.exists():
+                if local_skills.exists():
+                    try:
+                        local_skills.rmdir()
+                    except OSError:
+                        pass
+                shutil.move(str(legacy_shared), str(local_skills))
+            else:
+                local_skills.mkdir(parents=True, exist_ok=True)
+
+            if legacy_manifest.exists():
+                shutil.move(str(legacy_manifest), str(local_pkg_dir / "manifest.json"))
+            
+            write_package_meta(
+                local_pkg_dir / "package.json",
+                PackageMeta(
+                    slug="local",
+                    name="Local",
+                    version=1,
+                    mutable=True,
+                    active=True,
+                )
+            )
+
+
 def build_backend_container(
     env: dict[str, str] | None = None,
     *,
@@ -116,11 +156,18 @@ def build_backend_container(
         active_env.update(env)
 
     paths = resolve_app_paths(active_env)
+    
+    _migrate_to_packages(paths.data_dir, paths.packages_root)
+
     support_store = HarnessSupportStore(paths.settings_path)
     harness_kernel = HarnessKernelService.from_environment(active_env, support_store=support_store)
     invalidation = InvalidationFanout()
 
-    skills_store = SkillStore(paths.skills_store_root, manifest_path=paths.skills_store_manifest)
+    skills_store = SkillStore(
+        paths.skills_store_root,
+        manifest_path=paths.skills_store_manifest,
+        packages_root=paths.packages_root,
+    )
     skills_read_models = SkillsReadModelService.from_kernel(store=skills_store, kernel=harness_kernel)
     invalidation.register(skills_read_models)
 

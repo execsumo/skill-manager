@@ -20,7 +20,15 @@ class FakeHomeSpec:
     xdg_state_home: Path
 
     @property
+    def packages_root(self) -> Path:
+        return self.xdg_data_home / "skill-manager" / "packages"
+
+    @property
     def skills_store_root(self) -> Path:
+        return self.packages_root / "local" / "skills"
+
+    @property
+    def legacy_skills_store_root(self) -> Path:
         return self.xdg_data_home / "skill-manager" / "shared"
 
     @property
@@ -156,6 +164,19 @@ def seed_skill_package(
 def seed_store_manifest(spec: FakeHomeSpec, entries: list[SkillStoreEntry]) -> None:
     write_skill_store_manifest(
         spec.skills_store_root.parent / "manifest.json",
+        SkillStoreManifest(entries=tuple(entries)),
+    )
+    from skill_manager.application.packages import write_package_meta, PackageMeta
+    spec.packages_root.mkdir(parents=True, exist_ok=True)
+    (spec.packages_root / "local").mkdir(parents=True, exist_ok=True)
+    write_package_meta(
+        spec.packages_root / "local" / "package.json",
+        PackageMeta(slug="local", name="Local", version=1, mutable=True, active=True)
+    )
+
+def seed_legacy_store_manifest(spec: FakeHomeSpec, entries: list[SkillStoreEntry]) -> None:
+    write_skill_store_manifest(
+        spec.legacy_skills_store_root.parent / "manifest.json",
         SkillStoreManifest(entries=tuple(entries)),
     )
 

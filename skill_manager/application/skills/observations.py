@@ -21,6 +21,7 @@ class StorePackageObservation:
     recorded_source_ref: str | None = None
     recorded_source_path: str | None = None
     origin_harness: str | None = None
+    owning_package_slug: str | None = None
 
 
 @dataclass(frozen=True)
