@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>A local-first control center for AI extensions.</strong><br />
-  Use, review, scan, and discover Skills, MCP servers, slash commands, hooks, and CLI tools across agent harnesses.
+  Use, review, scan, and discover Skills, Agents, MCP servers, slash commands, hooks, and CLI tools across agent harnesses.
 </p>
 
 <p align="center">
@@ -39,6 +39,8 @@ AI extensions are scattered across harness-specific folders, MCP config files, s
 - Install or adopt MCP server configs, resolve differences, and enable them where supported.
 - Manage reusable slash commands once, then sync them to supported harnesses.
 - Manage hooks as normalized records, then sync them into supported harness settings with drift detection and review for unmanaged entries.
+- Define Agents — scoped personas that bundle a prompt, skills, and tool constraints — and "hire" them into supported harnesses with a dry-run preview and an honest report of what each harness can and cannot enforce.
+- Keep everything in portable packages: the default `local` package holds your own resources, and additional packages can be dropped in (or deactivated) as a unit.
 - Discover Skills, MCP servers, and preview-only CLI tools from marketplace sources.
 
 ## Product tour
@@ -104,6 +106,17 @@ Typical flow:
 4. Review existing harness command files and adopt them into the shared library when needed.
 
 ![skill-market-slash-commands-matrix](./assets/skill-manager-slash_commands-matrix.png)
+
+### Agents
+
+Define an agent once — a persona with a system prompt, a curated set of skills, tool constraints, and per-harness overrides — then compile ("hire") it into the harness where it should run.
+
+Typical flow:
+
+1. Create an agent in `packages/<package>/agents/<slug>.md` (YAML frontmatter + prompt body), or scaffold one from the Agents page.
+2. Reference skills by `<package>/<skill-dir>` alias; they are resolved and pinned at compile time.
+3. Pick a target harness and preview the compiled artifact (dry run), including the degradation report — anything the harness cannot enforce is listed instead of silently dropped.
+4. Hire: the artifact is written with a provenance marker, and Skill Manager refuses to overwrite files it did not generate.
 
 ### Marketplace
 
@@ -212,6 +225,14 @@ App-owned files live under `~/.skill-manager` on macOS (with a legacy fallback t
 
 ## How it works
 
+### Packages
+
+All Skill Manager resources live inside packages under the app's `packages/` directory. Each package carries a `package.json` (`slug`, `name`, `version`, `mutable`, `active`) plus per-family content (`skills/`, `agents/`, and a skills `manifest.json`). There is always a default `local` package — the mutable workspace where your own resources live. Additional packages are just directories: drop one in to install it, set `active: false` to disable it, and mark it `mutable: false` to protect shared content from accidental edits (the API rejects writes into immutable packages).
+
+Resource identity stays stable (content-derived refs), while `<package>/<resource>` aliases give human-readable references; agent compilation resolves aliases and pins them. If two packages provide the same resource, the `local` package wins and the collision is reported as an inventory issue.
+
+On first start after upgrading, the legacy shared store (`shared/` + top-level `manifest.json`) is migrated one-time into `packages/local/` — the migration is locked, idempotent, and skipped when the new layout already exists.
+
 ### Skills
 
 Before adoption, each harness points at its own local skill folder. After adoption, Skill Manager keeps one canonical package in its shared local store and exposes it to selected harnesses with local links. Disabling a harness removes that harness binding without deleting the package.
@@ -272,6 +293,18 @@ Because harnesses differ, not every canonical event maps to every harness. Skill
 
 Skill Manager owns only the specific hook entries it writes. It merges into each harness's config without disturbing hooks or other keys it does not manage, and it tracks ownership with content hashes. When a managed hook is edited outside Skill Manager it is reported as drifted, and hooks found in a harness that Skill Manager does not manage are reported as unmanaged for review.
 
+### Agents
+
+Agents are Markdown files with YAML frontmatter in a package's `agents/` directory: a name and description, `capabilities` (skill aliases, MCP references, tool allow/deny lists), optional per-harness overrides (model, reasoning effort), and the persona prompt as the body.
+
+Compiling ("hiring") an agent renders a harness-specific artifact:
+
+- Claude Code: `~/.claude/agents/<slug>.md` — frontmatter carries the tool allowlist and model/reasoning overrides; referenced skills are embedded in full.
+- Cursor: `<project>/.cursor/rules/skill-manager.<slug>.mdc` — rules are project-scoped, so a project directory is required; Skill Manager never touches `.cursorrules`.
+- Codex: `~/.codex/prompts/<slug>.md` — compiled as a custom prompt invoked with `/`, since Codex has no agent-definition file Skill Manager can own without overwriting user `AGENTS.md`.
+
+Every artifact embeds a provenance marker (agent ref, definition hash, pinned skill revisions). Skill Manager only overwrites files carrying that marker — hand-written files are never clobbered. Constraints a harness cannot enforce (tool deny-lists everywhere, any tool lists on Cursor/Codex, model overrides outside Claude) are surfaced as **degradation notes** in the compile response and the Hire preview, never silently dropped.
+
 ### CLIs
 
 CLI marketplace entries are preview-only.
@@ -282,7 +315,9 @@ On macOS, app-owned files live under `~/.skill-manager` (with a legacy fallback 
 
 Useful macOS paths:
 
-- shared skills store: `~/.skill-manager/shared`
+- packages root: `~/.skill-manager/packages` (default package: `packages/local`)
+- shared skills store: `~/.skill-manager/packages/local/skills` (migrated from the legacy `~/.skill-manager/shared` on first start)
+- agents: `~/.skill-manager/packages/<package>/agents`
 - MCP manifest: `~/.skill-manager/mcp/manifest.json`
 - hooks manifest: `~/.skill-manager/hooks/manifest.json`
 - slash command library: `~/.skill-manager/slash-commands/commands`
@@ -293,7 +328,9 @@ Useful macOS paths:
 
 Useful Linux paths:
 
-- shared skills store: `${XDG_DATA_HOME:-~/.local/share}/skill-manager/shared`
+- packages root: `${XDG_DATA_HOME:-~/.local/share}/skill-manager/packages`
+- shared skills store: `${XDG_DATA_HOME:-~/.local/share}/skill-manager/packages/local/skills`
+- agents: `${XDG_DATA_HOME:-~/.local/share}/skill-manager/packages/<package>/agents`
 - MCP manifest: `${XDG_DATA_HOME:-~/.local/share}/skill-manager/mcp/manifest.json`
 - hooks manifest: `${XDG_DATA_HOME:-~/.local/share}/skill-manager/hooks/manifest.json`
 - slash command library: `${XDG_DATA_HOME:-~/.local/share}/skill-manager/slash-commands/commands`
@@ -379,7 +416,11 @@ npm run build
 
 - [x] Hook support
 - [x] Slash command support
+- [x] Agent personas (define once, hire into Claude Code / Cursor / Codex)
+- [x] Package-based storage (portable resource bundles)
 - [ ] Plugin support
+- [ ] Agent-scoped MCP compilation
+- [ ] Compiled-artifact drift detection surfacing
 
 ### Harness expansion
 

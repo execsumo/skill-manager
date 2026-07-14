@@ -1,5 +1,10 @@
 # Plan: Packages & Agents (revised from RFC)
 
+> **Status: SHIPPED 2026-07-13.** All four stages landed on `main` the same day:
+> Stage 1 `343fb9d`, Stage 2 `5f8f808`, Stage 3 `dec09ae`, Stage 4 `076641a`.
+> Deferred follow-ups are tracked in `handoff.md`. This file remains the design of
+> record for the decisions below.
+
 Revised execution plan for the "Agents & Packages" RFC, incorporating the architectural
 review of 2026-07-13. Goal: finish and test all stages today, credits permitting.
 `handoff.md` tracks live status; this file is the design of record.
