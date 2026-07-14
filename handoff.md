@@ -27,11 +27,23 @@ hardcoded model ids, and cross-harness delegation runtime is cut from v1.
 - **Also on `main`:** upstream mode-io merge `0b54469` (came in mid-session from
   another agent) + `9224d79` fixing its artifacts (duplicate hermes mapper key,
   duplicate README Hermes cell, upstream png). Fork features verified intact.
-- **Stage 2 (agents family + Claude compile) — in progress, me**, branch
-  `feat/agents-family` in worktree `../skill-manager-worktrees/agents-family`.
-- **Stages 3–4** not started. Stage 3 (multi-harness compile + degradation report) is
-  judgment-heavy — do it in-session, don't delegate; Stage 4 (agents-first UI)
-  delegates to agy.
+- **Stage 2 (agents family + Claude compile) — DONE, merged as `5f8f808`.** Agents
+  live in `packages/<slug>/agents/*.md`; `AgentsService` (scan/resolve/compile) in
+  `skill_manager/application/agents/`; `GET /api/agents` +
+  `POST /api/agents/{ref}/compile` (`dryRun`, `projectDir`); provenance marker +
+  refuse-to-overwrite-foreign-files; OpenAPI regenerated. 11 new unit tests.
+- **Stage 3 (cursor/codex targets + degradation reports) — DONE, merged as `dec09ae`.**
+  Cursor → `<project>/.cursor/rules/skill-manager.<slug>.mdc` (projectDir required);
+  Codex → `~/.codex/prompts/<slug>.md` (custom prompt; reported as degradation).
+  Suite at merge: backend 330+133, frontend 269, typecheck, build — all green,
+  independently run.
+- **Stage 4 (agents UI) — delegated to agy** (pane `wP:p4`, existing worktree, new
+  branch `delegate/agy-agents-ui` off `main`); spec at `/tmp/agents-ui-stage4.md`.
+  Verify DoD independently before merging (typecheck / npm test / build / backend
+  suite; frontend-only diff).
+- **Running instance:** restart it after pulling `main` — backend gained the agents
+  router and the packages migration runs on first container build (moves
+  `data_dir/shared` → `packages/local/`; one-way, locked, idempotent).
 
 ### To resume mid-flight
 
