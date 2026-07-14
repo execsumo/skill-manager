@@ -650,6 +650,17 @@
           "harness": {
             "title": "Harness",
             "type": "string"
+          },
+          "projectDir": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Projectdir"
           }
         },
         "required": [

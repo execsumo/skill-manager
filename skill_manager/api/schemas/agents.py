@@ -26,6 +26,7 @@ class CompileAgentRequest(BaseModel):
 
     harness: str
     dry_run: bool = Field(default=False, alias="dryRun")
+    project_dir: str | None = Field(default=None, alias="projectDir")
 
 
 class ResolvedSkillResponse(BaseModel):

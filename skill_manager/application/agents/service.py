@@ -20,7 +20,7 @@ GENERATED_MARKER = "skill-manager:generated"
 # Harnesses the compiler can target today, with the constraints each one can
 # actually enforce. Anything an agent asks for beyond this surfaces as a
 # degradation note instead of being silently dropped.
-COMPILE_TARGETS = ("claude",)
+COMPILE_TARGETS = ("claude", "cursor", "codex")
 
 
 class AgentsService:
@@ -57,13 +57,19 @@ class AgentsService:
                 return agent
         return None
 
-    def compile(self, agent: AgentDefinition, harness: str) -> CompiledAgentArtifact:
+    def compile(
+        self, agent: AgentDefinition, harness: str, *, project_dir: Path | None = None
+    ) -> CompiledAgentArtifact:
         if harness not in COMPILE_TARGETS:
             raise AgentCompileError(
                 f"unsupported compile target: {harness} (supported: {', '.join(COMPILE_TARGETS)})"
             )
         resolved = self._resolve_skills(agent)
-        return self._compile_claude(agent, resolved)
+        if harness == "claude":
+            return self._compile_claude(agent, resolved)
+        if harness == "cursor":
+            return self._compile_cursor(agent, resolved, project_dir)
+        return self._compile_codex(agent, resolved)
 
     def write_artifact(self, artifact: CompiledAgentArtifact) -> None:
         target = artifact.target_path
@@ -127,23 +133,9 @@ class AgentsService:
         if overrides.get("reasoning_effort"):
             frontmatter_lines.append(f"reasoning_effort: {overrides['reasoning_effort']}")
         frontmatter_lines.append("---")
-        pinned = ",".join(f"{skill.alias}@{skill.revision[:12]}" for skill in resolved)
-        provenance = (
-            f"<!-- {GENERATED_MARKER} agent={agent.ref} hash={agent.fingerprint[:12]}"
-            + (f" skills={pinned}" if pinned else "")
-            + " -->"
+        content = _render_artifact(
+            "\n".join(frontmatter_lines), _provenance(agent, resolved), agent, resolved
         )
-        sections = ["\n".join(frontmatter_lines), provenance, agent.prompt]
-        if agent.tools_denied:
-            sections.append(
-                "## Tool restrictions\n\nDo not use these tools: "
-                + ", ".join(agent.tools_denied)
-            )
-        for skill in resolved:
-            sections.append(
-                f"## Skill: {skill.declared_name} ({skill.alias})\n\n{_strip_frontmatter(skill.document)}"
-            )
-        content = "\n\n".join(section for section in sections if section) + "\n"
         return CompiledAgentArtifact(
             agent_ref=agent.ref,
             harness="claude",
@@ -152,6 +144,115 @@ class AgentsService:
             resolved_skills=resolved,
             degradations=tuple(degradations),
         )
+
+    def _compile_cursor(
+        self,
+        agent: AgentDefinition,
+        resolved: tuple[ResolvedSkill, ...],
+        project_dir: Path | None,
+    ) -> CompiledAgentArtifact:
+        if project_dir is None:
+            raise AgentCompileError(
+                "cursor rules are project-scoped: pass projectDir to compile for cursor"
+            )
+        overrides = dict(agent.harness_overrides.get("cursor", {}))
+        degradations: list[str] = []
+        if agent.tools_allowed or agent.tools_denied:
+            degradations.append(
+                "cursor: tool allow/deny lists are advisory only — Cursor rules cannot "
+                "enforce tool restrictions; they are stated in the rule text"
+            )
+        if overrides.get("model"):
+            degradations.append(
+                f"cursor: model override ({overrides['model']}) is not settable via a "
+                "rules file — select the model in Cursor itself"
+            )
+        if overrides.get("reasoning_effort"):
+            degradations.append(
+                "cursor: reasoning_effort is not settable via a rules file"
+            )
+        if agent.mcps:
+            degradations.append(
+                "cursor: MCP capabilities are not compiled in v1 — configure "
+                f"({', '.join(agent.mcps)}) through the MCP workspace"
+            )
+        frontmatter = "\n".join(
+            [
+                "---",
+                f"description: {agent.description or agent.name}",
+                "alwaysApply: true",
+                "---",
+            ]
+        )
+        content = _render_artifact(frontmatter, _provenance(agent, resolved), agent, resolved)
+        return CompiledAgentArtifact(
+            agent_ref=agent.ref,
+            harness="cursor",
+            target_path=project_dir / ".cursor" / "rules" / f"skill-manager.{agent.slug}.mdc",
+            content=content,
+            resolved_skills=resolved,
+            degradations=tuple(degradations),
+        )
+
+    def _compile_codex(
+        self, agent: AgentDefinition, resolved: tuple[ResolvedSkill, ...]
+    ) -> CompiledAgentArtifact:
+        overrides = dict(agent.harness_overrides.get("codex", {}))
+        degradations: list[str] = [
+            "codex: compiled as a custom prompt (~/.codex/prompts) invoked as "
+            f"/{agent.slug}, not a persistent persona — Codex has no agent-definition "
+            "file skill-manager can own without overwriting user AGENTS.md"
+        ]
+        if agent.tools_allowed or agent.tools_denied:
+            degradations.append(
+                "codex: tool allow/deny lists are advisory only — not enforced by Codex"
+            )
+        if overrides.get("model"):
+            degradations.append(
+                f"codex: model override ({overrides['model']}) is not compiled — set it "
+                "via a Codex profile in config.toml"
+            )
+        if agent.mcps:
+            degradations.append(
+                "codex: MCP capabilities are not compiled in v1 — configure "
+                f"({', '.join(agent.mcps)}) through the MCP workspace"
+            )
+        content = _render_artifact(None, _provenance(agent, resolved), agent, resolved)
+        return CompiledAgentArtifact(
+            agent_ref=agent.ref,
+            harness="codex",
+            target_path=self.home / ".codex" / "prompts" / f"{agent.slug}.md",
+            content=content,
+            resolved_skills=resolved,
+            degradations=tuple(degradations),
+        )
+
+
+def _provenance(agent: AgentDefinition, resolved: tuple[ResolvedSkill, ...]) -> str:
+    pinned = ",".join(f"{skill.alias}@{skill.revision[:12]}" for skill in resolved)
+    return (
+        f"<!-- {GENERATED_MARKER} agent={agent.ref} hash={agent.fingerprint[:12]}"
+        + (f" skills={pinned}" if pinned else "")
+        + " -->"
+    )
+
+
+def _render_artifact(
+    frontmatter: str | None,
+    provenance: str,
+    agent: AgentDefinition,
+    resolved: tuple[ResolvedSkill, ...],
+) -> str:
+    sections = [frontmatter, provenance, agent.prompt]
+    if agent.tools_denied:
+        sections.append(
+            "## Tool restrictions\n\nDo not use these tools: " + ", ".join(agent.tools_denied)
+        )
+    for skill in resolved:
+        sections.append(
+            f"## Skill: {skill.declared_name} ({skill.alias})\n\n{_strip_frontmatter(skill.document)}"
+        )
+    return "\n\n".join(section for section in sections if section) + "\n"
 
 
 def _strip_frontmatter(document: str) -> str:

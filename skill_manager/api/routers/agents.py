@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, HTTPException
 
 from skill_manager.api.deps import get_container
@@ -49,7 +51,11 @@ def compile_agent(
     if agent is None:
         raise HTTPException(status_code=404, detail=f"unknown agent ref: {agent_ref}")
     try:
-        artifact = container.agents_service.compile(agent, body.harness)
+        artifact = container.agents_service.compile(
+            agent,
+            body.harness,
+            project_dir=Path(body.project_dir) if body.project_dir else None,
+        )
         written = False
         if not body.dry_run:
             container.agents_service.write_artifact(artifact)

@@ -32,6 +32,9 @@ harnesses:
   claude:
     model: claude-sonnet-5
     reasoning_effort: high
+  cursor:
+    model: cursor-fast
+    reasoning_effort: high
 ---
 You are the Chief of Staff. Delegate; do not code.
 """
@@ -162,7 +165,40 @@ class AgentsServiceTests(unittest.TestCase):
         agent = self.service.get("local/chief-of-staff")
         assert agent is not None
         with self.assertRaises(AgentCompileError):
+            self.service.compile(agent, "windsurf")
+
+    def test_compile_cursor_requires_project_dir(self) -> None:
+        agent = self.service.get("local/chief-of-staff")
+        assert agent is not None
+        with self.assertRaises(AgentCompileError):
             self.service.compile(agent, "cursor")
+
+    def test_compile_cursor_artifact(self) -> None:
+        agent = self.service.get("local/chief-of-staff")
+        assert agent is not None
+        project = Path(self.temp.name) / "proj"
+        artifact = self.service.compile(agent, "cursor", project_dir=project)
+        self.assertEqual(
+            artifact.target_path,
+            project / ".cursor" / "rules" / "skill-manager.chief-of-staff.mdc",
+        )
+        self.assertIn("alwaysApply: true", artifact.content)
+        self.assertIn(GENERATED_MARKER, artifact.content)
+        self.assertNotIn("model:", artifact.content)
+        self.assertTrue(any("advisory" in d for d in artifact.degradations))
+        self.assertTrue(any("model override" in d for d in artifact.degradations))
+        self.assertTrue(any("reasoning_effort" in d for d in artifact.degradations))
+
+    def test_compile_codex_artifact(self) -> None:
+        agent = self.service.get("local/chief-of-staff")
+        assert agent is not None
+        artifact = self.service.compile(agent, "codex")
+        self.assertEqual(
+            artifact.target_path, self.home / ".codex" / "prompts" / "chief-of-staff.md"
+        )
+        self.assertIn(GENERATED_MARKER, artifact.content)
+        self.assertIn("## Skill: Project Context (local/project-context)", artifact.content)
+        self.assertTrue(any("custom prompt" in d for d in artifact.degradations))
 
     def test_write_artifact_refuses_foreign_file(self) -> None:
         agent = self.service.get("local/chief-of-staff")

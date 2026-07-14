@@ -1301,6 +1301,8 @@ export interface components {
             dryRun: boolean;
             /** Harness */
             harness: string;
+            /** Projectdir */
+            projectDir?: string | null;
         };
         /** CompileAgentResponse */
         CompileAgentResponse: {
