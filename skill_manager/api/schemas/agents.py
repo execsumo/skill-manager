@@ -46,10 +46,19 @@ class CompileAgentResponse(BaseModel):
     resolvedSkills: list[ResolvedSkillResponse]
 
 
+class UpdateAgentRequest(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    skills: list[str] | None = None
+    mcps: list[str] | None = None
+
+
 __all__ = [
     "AgentSummaryResponse",
     "AgentsPageResponse",
     "CompileAgentRequest",
     "CompileAgentResponse",
     "ResolvedSkillResponse",
+    "UpdateAgentRequest",
 ]
+

@@ -4,17 +4,26 @@ import { LoadingSpinner } from "../../../components/LoadingSpinner";
 import { useAgentsQuery } from "../api/queries";
 import { AgentCard } from "../components/AgentCard";
 import { HireAgentDialog } from "../components/HireAgentDialog";
+import { CreateAgentDialog } from "../components/CreateAgentDialog";
+import { EditAgentDialog } from "../components/EditAgentDialog";
 import { ErrorBanner } from "../../../components/ErrorBanner";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Plus } from "lucide-react";
 
 export default function AgentsPage() {
   const { data, isLoading, error } = useAgentsQuery();
   const [selectedAgentRef, setSelectedAgentRef] = useState<string | null>(null);
+  const [editingAgentRef, setEditingAgentRef] = useState<string | null>(null);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const selectedAgent = useMemo(() => {
     if (!data || !selectedAgentRef) return null;
     return data.agents.find(a => a.ref === selectedAgentRef) || null;
   }, [data, selectedAgentRef]);
+
+  const editingAgent = useMemo(() => {
+    if (!data || !editingAgentRef) return null;
+    return data.agents.find(a => a.ref === editingAgentRef) || null;
+  }, [data, editingAgentRef]);
 
   return (
     <>
@@ -22,6 +31,16 @@ export default function AgentsPage() {
         <PageHeader
           title="Agents"
           subtitle="Hire autonomous agents for your workspaces."
+          actions={
+            <button
+              type="button"
+              className="action-pill action-pill--md action-pill--accent"
+              onClick={() => setIsCreateOpen(true)}
+            >
+              <Plus size={14} aria-hidden="true" />
+              New Agent
+            </button>
+          }
         />
       </div>
 
@@ -55,6 +74,7 @@ export default function AgentsPage() {
                 key={agent.ref}
                 agent={agent}
                 onHire={(ref) => setSelectedAgentRef(ref)}
+                onEdit={(ref) => setEditingAgentRef(ref)}
               />
             ))}
           </div>
@@ -64,6 +84,15 @@ export default function AgentsPage() {
             <p className="empty-panel__body">
               Agents live in <code>packages/&lt;slug&gt;/agents/*.md</code>. Add some agents to your packages to see them here.
             </p>
+            <button
+              type="button"
+              className="action-pill action-pill--md action-pill--accent"
+              style={{ marginTop: "16px" }}
+              onClick={() => setIsCreateOpen(true)}
+            >
+              <Plus size={14} aria-hidden="true" />
+              Create Agent
+            </button>
           </div>
         )
       ) : null}
@@ -75,6 +104,21 @@ export default function AgentsPage() {
           if (!open) setSelectedAgentRef(null);
         }}
       />
+
+      <EditAgentDialog
+        agent={editingAgent}
+        open={editingAgent !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditingAgentRef(null);
+        }}
+      />
+
+      <CreateAgentDialog
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+      />
     </>
   );
 }
+
+

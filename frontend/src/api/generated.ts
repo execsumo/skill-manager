@@ -21,6 +21,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agents/{agent_ref}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Agent */
+        put: operations["update_agent_api_agents__agent_ref__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agents/{agent_ref}/compile": {
         parameters: {
             query?: never;
@@ -2339,8 +2356,18 @@ export interface components {
             asset_type: string;
             /** Description */
             description: string;
+            /**
+             * Mcps
+             * @default []
+             */
+            mcps: string[];
             /** Name */
             name: string;
+            /**
+             * Skills
+             * @default []
+             */
+            skills: string[];
         };
         /** ScaffoldResponse */
         ScaffoldResponse: {
@@ -2986,6 +3013,17 @@ export interface components {
             /** Supportsfrontmatter */
             supportsFrontmatter: boolean;
         };
+        /** UpdateAgentRequest */
+        UpdateAgentRequest: {
+            /** Description */
+            description?: string | null;
+            /** Mcps */
+            mcps?: string[] | null;
+            /** Name */
+            name?: string | null;
+            /** Skills */
+            skills?: string[] | null;
+        };
         /** ValidationError */
         ValidationError: {
             /** Context */
@@ -3024,6 +3062,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AgentsPageResponse"];
+                };
+            };
+        };
+    };
+    update_agent_api_agents__agent_ref__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agent_ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAgentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentSummaryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

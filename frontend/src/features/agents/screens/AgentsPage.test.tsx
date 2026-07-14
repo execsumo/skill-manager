@@ -95,11 +95,11 @@ describe("AgentsPage", () => {
     expect(screen.getByText("Issue 2")).toBeInTheDocument();
 
     // metadata
-    expect(screen.getByText("2 skills")).toBeInTheDocument();
-    expect(screen.getByText("1 MCPs")).toBeInTheDocument();
+    expect(screen.getByText(/Connected Skills \(2\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Connected MCPs \(1\)/i)).toBeInTheDocument();
   });
 
-  it("opens hire dialog and interacts with preview", async () => {
+  it("opens hire dialog when clicking Hire Agent button", async () => {
     fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === "string" ? input : input.toString();
       if (url.includes("/api/agents/pkg%3Aagent1/compile")) {
@@ -122,8 +122,9 @@ describe("AgentsPage", () => {
     renderPage();
     await waitFor(() => expect(screen.getByText("Test Agent 1")).toBeInTheDocument());
     
-    // click card to open hire dialog
-    fireEvent.click(screen.getByText("Test Agent 1"));
+    // click Hire Agent button on card
+    const hireButtons = screen.getAllByRole("button", { name: "Hire Agent" });
+    fireEvent.click(hireButtons[0]);
     
     // waiting for dialog
     const dialogTitle = await screen.findByRole("heading", { name: "Hire Agent: Test Agent 1" });
@@ -146,11 +147,110 @@ describe("AgentsPage", () => {
     expect(screen.getByText("skill1 @ hash123")).toBeInTheDocument();
 
     // hire
-    const hireBtn = screen.getByRole("button", { name: "Hire Agent" });
-    fireEvent.click(hireBtn);
+    const dialogHireBtn = screen.getByRole("button", { name: "Hire Agent" });
+    fireEvent.click(dialogHireBtn);
     
     await waitFor(() => {
       expect(screen.queryByRole("heading", { name: "Hire Agent: Test Agent 1" })).not.toBeInTheDocument();
     });
   });
+
+  it("opens create agent dialog and scaffolds new agent", async () => {
+    let scaffoldCalled = false;
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : input.toString();
+      if (url.includes("/api/scaffold")) {
+        scaffoldCalled = true;
+        const body = JSON.parse(String(init?.body));
+        expect(body).toEqual({
+          asset_type: "agent",
+          name: "New Security Agent",
+          description: "Scans for vulnerability",
+          skills: [],
+          mcps: [],
+        });
+        return okJson({ file_path: "/path/to/new-security-agent.md" });
+      }
+      if (url.includes("/api/agents")) return okJson(agentsFixture());
+      if (url.includes("/api/skills")) return okJson({ rows: [] });
+      if (url.includes("/api/mcp/inventory")) return okJson({ servers: [] });
+      throw new Error(`Unhandled URL ${url}`);
+    });
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Test Agent 1")).toBeInTheDocument());
+
+    const newBtn = screen.getByRole("button", { name: "New Agent" });
+    fireEvent.click(newBtn);
+
+    const dialogTitle = await screen.findByRole("heading", { name: "Create New Agent Persona" });
+    expect(dialogTitle).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText("e.g. Code Reviewer"), {
+      target: { value: "New Security Agent" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Describe the agent's purpose and capabilities..."), {
+      target: { value: "Scans for vulnerability" },
+    });
+
+    const submitBtn = screen.getByRole("button", { name: "Create Agent" });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => expect(scaffoldCalled).toBe(true));
+    await waitFor(() => {
+      expect(screen.queryByRole("heading", { name: "Create New Agent Persona" })).not.toBeInTheDocument();
+    });
+  });
+
+  it("opens edit dialog and updates agent capabilities", async () => {
+    let updateCalled = false;
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : input.toString();
+      if (url.includes("/api/agents/pkg%3Aagent1")) {
+        updateCalled = true;
+        const body = JSON.parse(String(init?.body));
+        expect(body).toEqual({
+          name: "Updated Agent 1",
+          description: "Updated desc",
+          skills: ["skill1", "skill2"],
+          mcps: ["mcp1"],
+        });
+        return okJson({
+          ...agentsFixture().agents[0],
+          name: "Updated Agent 1",
+          description: "Updated desc",
+        });
+      }
+      if (url.includes("/api/agents")) return okJson(agentsFixture());
+      if (url.includes("/api/skills")) return okJson({ rows: [] });
+      if (url.includes("/api/mcp/inventory")) return okJson({ servers: [] });
+      throw new Error(`Unhandled URL ${url}`);
+    });
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText("Test Agent 1")).toBeInTheDocument());
+
+    const editBtns = screen.getAllByRole("button", { name: "Edit" });
+    fireEvent.click(editBtns[0]);
+
+    const dialogTitle = await screen.findByRole("heading", { name: "Manage Agent Capabilities: Test Agent 1" });
+    expect(dialogTitle).toBeInTheDocument();
+
+    fireEvent.change(screen.getByDisplayValue("Test Agent 1"), {
+      target: { value: "Updated Agent 1" },
+    });
+    fireEvent.change(screen.getByDisplayValue("A cool agent"), {
+      target: { value: "Updated desc" },
+    });
+
+    const saveBtn = screen.getByRole("button", { name: "Save Capabilities" });
+    fireEvent.click(saveBtn);
+
+    await waitFor(() => expect(updateCalled).toBe(true));
+    await waitFor(() => {
+      expect(screen.queryByRole("heading", { name: "Manage Agent Capabilities: Test Agent 1" })).not.toBeInTheDocument();
+    });
+  });
 });
+
+

@@ -11,6 +11,7 @@ from skill_manager.api.schemas.agents import (
     CompileAgentRequest,
     CompileAgentResponse,
     ResolvedSkillResponse,
+    UpdateAgentRequest,
 )
 from skill_manager.application import BackendContainer
 from skill_manager.application.agents import COMPILE_TARGETS, AgentCompileError
@@ -39,6 +40,39 @@ def list_agents(container: BackendContainer = Depends(get_container)) -> AgentsP
         ],
         issues=list(issues),
     )
+
+
+@router.put("/{agent_ref:path}", response_model=AgentSummaryResponse)
+def update_agent(
+    agent_ref: str,
+    body: UpdateAgentRequest,
+    container: BackendContainer = Depends(get_container),
+) -> AgentSummaryResponse:
+    try:
+        updated = container.agents_service.save_agent(
+            agent_ref,
+            name=body.name,
+            description=body.description,
+            skills=body.skills,
+            mcps=body.mcps,
+        )
+        container.invalidation.invalidate_all()
+        return AgentSummaryResponse(
+            ref=updated.ref,
+            slug=updated.slug,
+            name=updated.name,
+            description=updated.description,
+            packageSlug=updated.package_slug,
+            skills=list(updated.skills),
+            mcps=list(updated.mcps),
+            toolsAllowed=list(updated.tools_allowed),
+            toolsDenied=list(updated.tools_denied),
+            compileTargets=[t for t in COMPILE_TARGETS],
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=404, detail=str(error))
+    except Exception as error:
+        raise HTTPException(status_code=400, detail=str(error))
 
 
 @router.post("/{agent_ref:path}/compile", response_model=CompileAgentResponse)
@@ -75,3 +109,4 @@ def compile_agent(
             for s in artifact.resolved_skills
         ],
     )
+

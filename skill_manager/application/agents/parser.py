@@ -90,4 +90,9 @@ def _str_tuple(value: object, label: str) -> tuple[str, ...]:
     return tuple(str(item).strip() for item in value if str(item).strip())
 
 
-__all__ = ["parse_agent_document", "parse_agent_file"]
+def split_frontmatter(document: str) -> tuple[dict, str]:
+    return _split_frontmatter(document)
+
+
+__all__ = ["parse_agent_document", "parse_agent_file", "split_frontmatter"]
+

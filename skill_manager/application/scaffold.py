@@ -13,6 +13,8 @@ class ScaffoldRequest(BaseModel):
     asset_type: str  # "skill", "agent", "mcp", "hook"
     name: str
     description: str
+    skills: list[str] = []
+    mcps: list[str] = []
 
 
 class ScaffoldService:
@@ -50,8 +52,20 @@ class ScaffoldService:
         # Hydrate template
         hydrated = template_content.replace("{{name}}", req.name)
         hydrated = hydrated.replace("{{description}}", req.description)
+        if req.asset_type == "agent":
+            skills_indent = "\n".join(f"    - {s}" for s in req.skills)
+            skills_str = f"\n{skills_indent}" if req.skills else " []"
+            
+            mcps_indent = "\n".join(f"    - {m}" for m in req.mcps)
+            mcps_str = f"\n{mcps_indent}" if req.mcps else " []"
+            
+            hydrated = hydrated.replace(
+                "capabilities:\n  skills: []\n  mcps: []",
+                f"capabilities:\n  skills:{skills_str}\n  mcps:{mcps_str}"
+            )
         
         out_dir.mkdir(parents=True, exist_ok=True)
         out_file.write_text(hydrated, encoding="utf-8")
         
         return out_file
+

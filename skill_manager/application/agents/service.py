@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import io
+from ruamel.yaml import YAML
+
 from skill_manager.application.packages import list_package_dirs, load_package_meta
 from skill_manager.application.skills.store import SkillStore
 from skill_manager.atomic_files import atomic_write_text
@@ -13,7 +16,7 @@ from .model import (
     CompiledAgentArtifact,
     ResolvedSkill,
 )
-from .parser import parse_agent_file
+from .parser import parse_agent_file, split_frontmatter
 
 GENERATED_MARKER = "skill-manager:generated"
 
@@ -56,6 +59,48 @@ class AgentsService:
             if agent.ref == agent_ref:
                 return agent
         return None
+
+    def save_agent(
+        self,
+        agent_ref: str,
+        *,
+        name: str | None = None,
+        description: str | None = None,
+        skills: list[str] | None = None,
+        mcps: list[str] | None = None,
+    ) -> AgentDefinition:
+        agent = self.get(agent_ref)
+        if agent is None:
+            raise ValueError(f"Agent not found: {agent_ref}")
+
+        path = agent.path
+        document = path.read_text(encoding="utf-8")
+        metadata, body = split_frontmatter(document)
+
+        if name is not None:
+            metadata["name"] = name
+        if description is not None:
+            metadata["description"] = description
+
+        if "capabilities" not in metadata or not isinstance(metadata["capabilities"], dict):
+            metadata["capabilities"] = {}
+
+        if skills is not None:
+            metadata["capabilities"]["skills"] = list(skills)
+        if mcps is not None:
+            metadata["capabilities"]["mcps"] = list(mcps)
+
+        yaml = YAML()
+        yaml.default_flow_style = False
+        stream = io.StringIO()
+        yaml.dump(metadata, stream)
+        new_frontmatter = stream.getvalue().strip()
+
+        new_content = f"---\n{new_frontmatter}\n---\n\n{body.lstrip()}"
+        atomic_write_text(path, new_content)
+
+        return parse_agent_file(path, package_slug=agent.package_slug)
+
 
     def compile(
         self, agent: AgentDefinition, harness: str, *, project_dir: Path | None = None
