@@ -4,6 +4,40 @@
  */
 
 export interface paths {
+    "/api/agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Agents */
+        get: operations["list_agents_api_agents_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agents/{agent_ref}/compile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Compile Agent */
+        post: operations["compile_agent_api_agents__agent_ref__compile_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -605,6 +639,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/scaffold": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Scaffold Asset */
+        post: operations["scaffold_asset_api_scaffold_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/scan/availability": {
         parameters: {
             query?: never;
@@ -1104,6 +1155,36 @@ export interface components {
             /** Observed harness */
             observedHarness?: string | null;
         };
+        /** AgentSummaryResponse */
+        AgentSummaryResponse: {
+            /** Compiletargets */
+            compileTargets: string[];
+            /** Description */
+            description: string;
+            /** Mcps */
+            mcps: string[];
+            /** Name */
+            name: string;
+            /** Packageslug */
+            packageSlug: string;
+            /** Ref */
+            ref: string;
+            /** Skills */
+            skills: string[];
+            /** Slug */
+            slug: string;
+            /** Toolsallowed */
+            toolsAllowed: string[];
+            /** Toolsdenied */
+            toolsDenied: string[];
+        };
+        /** AgentsPageResponse */
+        AgentsPageResponse: {
+            /** Agents */
+            agents: components["schemas"]["AgentSummaryResponse"][];
+            /** Issues */
+            issues: string[];
+        };
         /** BulkManageFailureResponse */
         BulkManageFailureResponse: {
             /** Error */
@@ -1210,6 +1291,35 @@ export interface components {
             items: components["schemas"]["CliMarketplaceItemResponse"][];
             /** Nextoffset */
             nextOffset?: number | null;
+        };
+        /** CompileAgentRequest */
+        CompileAgentRequest: {
+            /**
+             * Dryrun
+             * @default false
+             */
+            dryRun: boolean;
+            /** Harness */
+            harness: string;
+        };
+        /** CompileAgentResponse */
+        CompileAgentResponse: {
+            /** Agentref */
+            agentRef: string;
+            /** Content */
+            content: string | null;
+            /** Degradations */
+            degradations: string[];
+            /** Harness */
+            harness: string;
+            /** Ok */
+            ok: boolean;
+            /** Resolvedskills */
+            resolvedSkills: components["schemas"]["ResolvedSkillResponse"][];
+            /** Targetpath */
+            targetPath: string;
+            /** Written */
+            written: boolean;
         };
         /** DetectedProviderResponse */
         DetectedProviderResponse: {
@@ -2212,6 +2322,29 @@ export interface components {
              */
             sourceKind: "managed" | "harness";
         };
+        /** ResolvedSkillResponse */
+        ResolvedSkillResponse: {
+            /** Alias */
+            alias: string;
+            /** Name */
+            name: string;
+            /** Revision */
+            revision: string;
+        };
+        /** ScaffoldRequest */
+        ScaffoldRequest: {
+            /** Asset Type */
+            asset_type: string;
+            /** Description */
+            description: string;
+            /** Name */
+            name: string;
+        };
+        /** ScaffoldResponse */
+        ScaffoldResponse: {
+            /** File Path */
+            file_path: string;
+        };
         /** ScanAvailabilityResponse */
         ScanAvailabilityResponse: {
             /** Available */
@@ -2873,6 +3006,61 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    list_agents_api_agents_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentsPageResponse"];
+                };
+            };
+        };
+    };
+    compile_agent_api_agents__agent_ref__compile_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agent_ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompileAgentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompileAgentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     health_api_health_get: {
         parameters: {
             query?: never;
@@ -4165,6 +4353,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PermissionSetHarnessesResultResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    scaffold_asset_api_scaffold_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScaffoldRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScaffoldResponse"];
                 };
             };
             /** @description Validation Error */

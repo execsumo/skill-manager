@@ -6,9 +6,11 @@ from dataclasses import dataclass
 from skill_manager.db import Database
 from skill_manager.db.repositories import ScanConfigRepository
 from skill_manager.harness import HarnessKernelService, HarnessSupportStore
+from skill_manager.harness.resolution import resolve_context
 from skill_manager.paths import AppPaths, resolve_app_paths
 
 from .scaffold import ScaffoldService
+from .agents import AgentsService
 from .packages import PackageMeta, write_package_meta
 from skill_manager.atomic_files import file_lock
 import shutil
@@ -103,6 +105,7 @@ class BackendContainer:
     scan_config_service: ScanConfigService
     scan_service: ScanService
     scaffold_service: ScaffoldService
+    agents_service: AgentsService
 
 
 def _migrate_to_packages(data_dir: Path, packages_root: Path) -> None:
@@ -277,6 +280,11 @@ def build_backend_container(
         target_resolver=ScanTargetResolver(skills_queries),
     )
     scaffold_service = ScaffoldService(paths)
+    agents_service = AgentsService(
+        paths.packages_root,
+        skills_store,
+        resolve_context(active_env).home,
+    )
 
     return BackendContainer(
         paths=paths,
@@ -317,4 +325,5 @@ def build_backend_container(
         scan_config_service=scan_config_service,
         scan_service=scan_service,
         scaffold_service=scaffold_service,
+        agents_service=agents_service,
     )

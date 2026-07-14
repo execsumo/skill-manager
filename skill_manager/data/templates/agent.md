@@ -8,10 +8,7 @@ capabilities:
     allowed: []
     denied: []
 harnesses:
-  claude:
-    model: claude-3-5-sonnet-20240620
-  codex:
-    model: gpt-4o
+  claude: {}
 ---
 
 # {{name}}

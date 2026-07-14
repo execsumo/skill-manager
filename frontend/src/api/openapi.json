@@ -153,6 +153,103 @@
         "title": "AdoptMcpRequest",
         "type": "object"
       },
+      "AgentSummaryResponse": {
+        "properties": {
+          "compileTargets": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Compiletargets",
+            "type": "array"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "mcps": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Mcps",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "packageSlug": {
+            "title": "Packageslug",
+            "type": "string"
+          },
+          "ref": {
+            "title": "Ref",
+            "type": "string"
+          },
+          "skills": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Skills",
+            "type": "array"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "toolsAllowed": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Toolsallowed",
+            "type": "array"
+          },
+          "toolsDenied": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Toolsdenied",
+            "type": "array"
+          }
+        },
+        "required": [
+          "ref",
+          "slug",
+          "name",
+          "description",
+          "packageSlug",
+          "skills",
+          "mcps",
+          "toolsAllowed",
+          "toolsDenied",
+          "compileTargets"
+        ],
+        "title": "AgentSummaryResponse",
+        "type": "object"
+      },
+      "AgentsPageResponse": {
+        "properties": {
+          "agents": {
+            "items": {
+              "$ref": "#/components/schemas/AgentSummaryResponse"
+            },
+            "title": "Agents",
+            "type": "array"
+          },
+          "issues": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Issues",
+            "type": "array"
+          }
+        },
+        "required": [
+          "agents",
+          "issues"
+        ],
+        "title": "AgentsPageResponse",
+        "type": "object"
+      },
       "BulkManageFailureResponse": {
         "properties": {
           "error": {
@@ -541,6 +638,85 @@
           "hasMore"
         ],
         "title": "CliMarketplacePageResponse",
+        "type": "object"
+      },
+      "CompileAgentRequest": {
+        "properties": {
+          "dryRun": {
+            "default": false,
+            "title": "Dryrun",
+            "type": "boolean"
+          },
+          "harness": {
+            "title": "Harness",
+            "type": "string"
+          }
+        },
+        "required": [
+          "harness"
+        ],
+        "title": "CompileAgentRequest",
+        "type": "object"
+      },
+      "CompileAgentResponse": {
+        "properties": {
+          "agentRef": {
+            "title": "Agentref",
+            "type": "string"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content"
+          },
+          "degradations": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Degradations",
+            "type": "array"
+          },
+          "harness": {
+            "title": "Harness",
+            "type": "string"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "resolvedSkills": {
+            "items": {
+              "$ref": "#/components/schemas/ResolvedSkillResponse"
+            },
+            "title": "Resolvedskills",
+            "type": "array"
+          },
+          "targetPath": {
+            "title": "Targetpath",
+            "type": "string"
+          },
+          "written": {
+            "title": "Written",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok",
+          "agentRef",
+          "harness",
+          "targetPath",
+          "written",
+          "content",
+          "degradations",
+          "resolvedSkills"
+        ],
+        "title": "CompileAgentResponse",
         "type": "object"
       },
       "DetectedProviderResponse": {
@@ -3593,6 +3769,65 @@
         "title": "ReconcilePermissionRequest",
         "type": "object"
       },
+      "ResolvedSkillResponse": {
+        "properties": {
+          "alias": {
+            "title": "Alias",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "string"
+          }
+        },
+        "required": [
+          "alias",
+          "name",
+          "revision"
+        ],
+        "title": "ResolvedSkillResponse",
+        "type": "object"
+      },
+      "ScaffoldRequest": {
+        "properties": {
+          "asset_type": {
+            "title": "Asset Type",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_type",
+          "name",
+          "description"
+        ],
+        "title": "ScaffoldRequest",
+        "type": "object"
+      },
+      "ScaffoldResponse": {
+        "properties": {
+          "file_path": {
+            "title": "File Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file_path"
+        ],
+        "title": "ScaffoldResponse",
+        "type": "object"
+      },
       "ScanAvailabilityResponse": {
         "properties": {
           "available": {
@@ -5455,6 +5690,79 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/agents": {
+      "get": {
+        "operationId": "list_agents_api_agents_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentsPageResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Agents",
+        "tags": [
+          "Agents"
+        ]
+      }
+    },
+    "/api/agents/{agent_ref}/compile": {
+      "post": {
+        "operationId": "compile_agent_api_agents__agent_ref__compile_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agent_ref",
+            "required": true,
+            "schema": {
+              "title": "Agent Ref",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompileAgentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompileAgentResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Compile Agent",
+        "tags": [
+          "Agents"
+        ]
+      }
+    },
     "/api/health": {
       "get": {
         "operationId": "health_api_health_get",
@@ -7247,6 +7555,47 @@
           }
         },
         "summary": "Set Permission Harnesses"
+      }
+    },
+    "/api/scaffold": {
+      "post": {
+        "operationId": "scaffold_asset_api_scaffold_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScaffoldRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScaffoldResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Scaffold Asset",
+        "tags": [
+          "Scaffold"
+        ]
       }
     },
     "/api/scan/availability": {
