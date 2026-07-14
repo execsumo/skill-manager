@@ -17,12 +17,21 @@ hardcoded model ids, and cross-harness delegation runtime is cut from v1.
 
 - **Stage 0 (scaffolding) — DONE**, committed on `main` (`64d08b2`, `898af8b`).
   Templates + `POST /api/scaffold`, writing into legacy store paths.
-- **Stage 1 (package store + migration) — delegated to agy** on branch
-  `feat/package-store`; brief at `/tmp/package-store-stage1.md`. Not merged until the
-  validation suite is independently re-run and the diff spot-checked (per CLAUDE.md).
-- **Stages 2–4** not started. Stage 2 (agents family + Claude compile) follows Stage 1
-  merge; Stage 3 (multi-harness compile + degradation report) is judgment-heavy — do it
-  in-session, don't delegate; Stage 4 (agents-first UI) delegates to agy.
+- **Stage 1 (package store + migration) — DONE, merged to `main` as `343fb9d`** (agy
+  delegate, independently verified: typecheck, backend 316+133, frontend 269, build).
+  Migration runs in `build_backend_container` (`_migrate_to_packages`); multi-package
+  scan honors `active`; immutability guard in `SkillStore`. Known v1 nit: duplicate
+  refs between two *non-local* packages are both retained (issue emitted; local-wins
+  works). agy pane `wP:p4` + worktree `../skill-manager-worktrees/agy-package-store`
+  kept alive for Stage 4.
+- **Also on `main`:** upstream mode-io merge `0b54469` (came in mid-session from
+  another agent) + `9224d79` fixing its artifacts (duplicate hermes mapper key,
+  duplicate README Hermes cell, upstream png). Fork features verified intact.
+- **Stage 2 (agents family + Claude compile) — in progress, me**, branch
+  `feat/agents-family` in worktree `../skill-manager-worktrees/agents-family`.
+- **Stages 3–4** not started. Stage 3 (multi-harness compile + degradation report) is
+  judgment-heavy — do it in-session, don't delegate; Stage 4 (agents-first UI)
+  delegates to agy.
 
 ### To resume mid-flight
 
