@@ -229,7 +229,7 @@ def build_backend_container(
         scan_config_service,
         target_resolver=ScanTargetResolver(skills_queries),
     )
-    scaffold_service = ScaffoldService(paths.data_dir)
+    scaffold_service = ScaffoldService(paths)
 
     return BackendContainer(
         paths=paths,
