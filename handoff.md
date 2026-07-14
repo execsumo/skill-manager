@@ -4,6 +4,29 @@ Running status for in-flight work. Read this before resuming. Newest session on 
 
 ---
 
+## 2026-07-13 — Migrated Hermes to upstream's product-accurate impl (PR #51)
+
+Replaced our speculative Hermes harness with upstream mode-io PR #51 (commit `4f085f8`),
+landed on `main` as `3c9beb2` via a verified cherry-pick reconciled with fork-only work.
+
+- **MCP now correct**: `~/.hermes/config.yaml` (YAML) under `mcp_servers`, no `type` field
+  (standalone `HermesMapper`). Adds `ruamel.yaml`; `FileBackedMcpAdapter` mutates in place
+  (`_ensure_subtree`) so YAML comments survive — **write path changed for all config-subtree
+  MCP harnesses** (claude/cursor/codex/opencode), all re-tested green.
+- **Skills**: categorized `~/.hermes/skills/<category>/<skill>/`, shared under `skill-manager`.
+- **Hub-awareness**: reads `.hub/lock.json` + `.bundled_manifest`; excludes
+  official/builtin/optional + self-learned; adopts only external-hub; `origin_harness` provenance
+  threaded through the store manifest.
+- **Home override**: `SKILL_MANAGER_HERMES_HOME` → `HERMES_HOME` → `~/.hermes`.
+- **Kept fork-only**: our Hermes slash-command binding (still **provisional** — upstream omits it),
+  `agy` harness, `hermes-logo.svg` (dropped upstream png).
+- Resolves handoff item #2 for the **MCP shape** (now matches upstream's real formats). Still
+  unverified against a live Hermes install; **slash commands remain provisional**. Hooks/permissions
+  still unbound (items #1/#3 below).
+- Verified independently: backend 309+133, typecheck, npm 269, build, openapi (no drift) — all green.
+
+---
+
 ## 2026-07-12 — Hermes Agent harness + `~/` path display
 
 ### What shipped (done, validated, verified live)
