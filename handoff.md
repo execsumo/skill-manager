@@ -37,13 +37,22 @@ hardcoded model ids, and cross-harness delegation runtime is cut from v1.
   Codex → `~/.codex/prompts/<slug>.md` (custom prompt; reported as degradation).
   Suite at merge: backend 330+133, frontend 269, typecheck, build — all green,
   independently run.
-- **Stage 4 (agents UI) — delegated to agy** (pane `wP:p4`, existing worktree, new
-  branch `delegate/agy-agents-ui` off `main`); spec at `/tmp/agents-ui-stage4.md`.
-  Verify DoD independently before merging (typecheck / npm test / build / backend
-  suite; frontend-only diff).
-- **Running instance:** restart it after pulling `main` — backend gained the agents
-  router and the packages migration runs on first container build (moves
-  `data_dir/shared` → `packages/local/`; one-way, locked, idempotent).
+- **Stage 4 (agents UI) — DONE, merged as `076641a`** (agy delegate, independently
+  verified: typecheck, frontend 272, backend 330+133, build). `/agents` route,
+  sidebar entry, agent cards, Hire dialog with dry-run preview + degradation
+  warnings + cursor projectDir gating. Note: agy's original commit regressed
+  `handoff.md` from stale worktree state — stripped via amend before merge.
+- **All four stages complete.** `frontend/dist` rebuilt on `main`. **Restart the
+  running instance** — backend gained the agents router, and the packages migration
+  runs on first container build (moves `data_dir/shared` → `packages/local/`;
+  one-way, locked, idempotent).
+- **Not torn down** (left intentionally): agy pane `wP:p4`, worktrees
+  `../skill-manager-worktrees/{agy-package-store,agents-family}`, merged branches
+  `delegate/agy-package-store`, `delegate/agy-agents-ui`, `feat/agents-family`.
+- **Deferred (v1 cuts + follow-ups):** cross-harness delegation runtime; package
+  deps; packages inventory UI view; agent-scoped MCP compilation; non-local vs
+  non-local duplicate-ref policy (both retained today, issue emitted); drift
+  detection surfacing for compiled artifacts (marker exists, no UI/API check yet).
 
 ### To resume mid-flight
 
