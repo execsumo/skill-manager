@@ -6,7 +6,7 @@ import opencodeLogo from "../../assets/harness-logos/opencode-logo.svg";
 import agyLogo from "../../assets/harness-logos/agy-logo.svg";
 import hermesLogo from "../../assets/harness-logos/hermes-logo.svg";
 
-export type HarnessLogoKey = "claude" | "codex" | "cursor" | "opencode" | "openclaw" | "agy" | "hermes";
+export type HarnessLogoKey = "claude" | "codex" | "cursor" | "hermes" | "opencode" | "openclaw" | "agy";
 
 interface HarnessPresentation {
   logoSrc: string;

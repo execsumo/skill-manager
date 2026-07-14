@@ -4,6 +4,35 @@ Running status for in-flight work. Read this before resuming. Newest session on 
 
 ---
 
+## 2026-07-13 (evening) — Packages & Agents: plan locked, Stage 1 delegated
+
+The "Agents & Packages" RFC was reviewed and revised; **`plan-agents-packages.md` is the
+design of record** — read it first when resuming. Key amendments over the raw RFC:
+packages *migrate* the legacy store (no parallel resolution paths), stable `SkillRef`
+ids stay primary with `pkg/slug` as compile-time-pinned aliases, compiled artifacts get
+provenance headers + drift detection, per-harness capability-degradation reports, no
+hardcoded model ids, and cross-harness delegation runtime is cut from v1.
+
+### Status
+
+- **Stage 0 (scaffolding) — DONE**, committed on `main` (`64d08b2`, `898af8b`).
+  Templates + `POST /api/scaffold`, writing into legacy store paths.
+- **Stage 1 (package store + migration) — delegated to agy** on branch
+  `feat/package-store`; brief at `/tmp/package-store-stage1.md`. Not merged until the
+  validation suite is independently re-run and the diff spot-checked (per CLAUDE.md).
+- **Stages 2–4** not started. Stage 2 (agents family + Claude compile) follows Stage 1
+  merge; Stage 3 (multi-harness compile + degradation report) is judgment-heavy — do it
+  in-session, don't delegate; Stage 4 (agents-first UI) delegates to agy.
+
+### To resume mid-flight
+
+1. Check `git branch -a` / agy's pane for `feat/package-store` progress; read the brief.
+2. Independently run the validation gate before any merge:
+   `npm run typecheck && bash scripts/test_backend.sh && npm test && npm run build`.
+3. Continue at the first unfinished stage in `plan-agents-packages.md`.
+
+---
+
 ## 2026-07-13 — Migrated Hermes to upstream's product-accurate impl (PR #51)
 
 Replaced our speculative Hermes harness with upstream mode-io PR #51 (commit `4f085f8`),

@@ -133,6 +133,7 @@ skill-manager start
 ```
 
 The npm wrapper downloads the native release artifact for the current platform and CPU architecture.
+Native release artifacts are published on GitHub Releases for macOS ARM64/x64 and Linux x64/ARM64.
 
 ## Supported harnesses
 
@@ -159,6 +160,11 @@ The npm wrapper downloads the native release artifact for the current platform a
       <a href="https://opencode.ai/docs">Docs</a>
     </td>
     <td align="center" valign="middle">
+      <img src="assets/harness-logos/hermes-logo.png" alt="Hermes Agent" height="56" /><br />
+      <strong>Hermes Agent</strong><br />
+      <a href="https://hermes-agent.nousresearch.com/docs">Docs</a>
+    </td>
+    <td align="center" valign="middle">
       <img src="assets/harness-logos/openclaw-logo.svg" alt="OpenClaw" height="56" /><br />
       <strong>OpenClaw</strong><br />
       <a href="https://docs.openclaw.ai/start/getting-started">Docs</a>
@@ -182,9 +188,9 @@ The npm wrapper downloads the native release artifact for the current platform a
 | Claude Code | Yes | Yes | Yes | Yes |
 | Cursor | Yes | Yes | Yes | Yes |
 | OpenCode | Yes | Yes | Yes | Partial |
+| Hermes Agent | Yes | Yes | Yes* | Not Yet |
 | OpenClaw | Yes | Not Yet | Not Yet | Not Yet |
 | Antigravity (agy) | Yes | Yes | Not Yet | Partial |
-| Hermes Agent | Yes | Yes | Yes* | Not Yet |
 
 <sub>\* Hermes Agent slash-command support is provisional. Its slash-command directory (`~/.hermes/commands`, frontmatter Markdown) follows common conventions but is **not yet verified against a shipping Hermes build**; hooks are not yet mapped. See `handoff.md`.</sub>
 

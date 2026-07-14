@@ -403,6 +403,7 @@ _MAPPERS: dict[str, TransportMapper] = {
     "cursor": CursorMapper(),
     "opencode": OpenCodeMapper(),
     "codex": CodexMapper(),
+    "hermes": HermesMapper(),
     "openclaw": OpenClawMapper(),
     "antigravity-cli": AntigravityCliMapper(),
     "hermes": HermesMapper(),
