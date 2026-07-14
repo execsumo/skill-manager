@@ -3,14 +3,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Shield, X } from "lucide-react";
 
 import { MatrixSortableHeader } from "../../../../components/matrix";
-import type { ScanConfigItem, ScanConfigValidationResponse } from "../../api/scan-types";
 import { LoadingSpinner } from "../../../../components/LoadingSpinner";
 import { ScanRow } from "./ScanRow";
 import { ScanResultModal } from "./ScanResultModal";
-import { ScanConfigDetailModal } from "./ScanConfigDetailModal";
 import { useSkillsCopy } from "../../i18n";
 import { sortRows, sortKeysEqual, type SortKey, type SortState } from "../../model/sortRows";
-import type { SkillScanState, ScanStateMap, LLMScanConfig, LLMScanConfigInput } from "../../model/use-skill-scan";
+import type { SkillScanState, ScanStateMap, LLMScanConfig } from "../../model/use-skill-scan";
 import type { SkillListRow } from "../../model/types";
 
 interface ScanViewProps {
@@ -18,18 +16,9 @@ interface ScanViewProps {
   scanStateMap: ScanStateMap;
   getScanState: (skillRef: string) => SkillScanState;
   llmConfig: LLMScanConfig | null;
-  configs: ScanConfigItem[];
-  activeConfigId: number | null;
-  showConfig: boolean;
   onOpenSkill: (skillRef: string) => void;
   onScanSkill: (skillRef: string) => void;
-  onOpenConfig: () => void;
-  onCloseConfig: () => void;
-  onSelectConfig: (id: number) => Promise<void>;
-  onAddConfig: (config: LLMScanConfigInput) => Promise<unknown>;
-  onEditConfig: (id: number, config: LLMScanConfigInput) => Promise<void>;
-  onRevealApiKey: (id: number) => Promise<string>;
-  onValidateConfig: (config: LLMScanConfigInput & { existingConfigId?: number }) => Promise<ScanConfigValidationResponse>;
+  onConfigure: () => void;
 }
 
 const INITIAL_SORT: SortState = { key: "name", direction: "asc" };
@@ -39,18 +28,9 @@ export function ScanView({
   scanStateMap,
   getScanState,
   llmConfig,
-  configs,
-  activeConfigId,
-  showConfig,
   onOpenSkill,
   onScanSkill,
-  onOpenConfig,
-  onCloseConfig,
-  onSelectConfig,
-  onAddConfig,
-  onEditConfig,
-  onRevealApiKey,
-  onValidateConfig,
+  onConfigure,
 }: ScanViewProps) {
   const [sort, setSort] = useState<SortState>(INITIAL_SORT);
   const [viewingSkillRef, setViewingSkillRef] = useState<string | null>(null);
@@ -59,10 +39,6 @@ export function ScanView({
 
   const sortedRows = useMemo(() => sortRows(rows, sort), [rows, sort]);
   const visibleRefs = useMemo(() => new Set(rows.map((row) => row.skillRef)), [rows]);
-  const activeConfig = useMemo(
-    () => configs.find((config) => config.id === activeConfigId) ?? configs.find((config) => config.isActive) ?? null,
-    [activeConfigId, configs],
-  );
 
   const requestSort = (key: SortKey) => {
     setSort((current) => {
@@ -95,19 +71,6 @@ export function ScanView({
       return changed ? next : current;
     });
   }, [visibleRefs]);
-
-  async function addAndActivateConfig(config: LLMScanConfigInput) {
-    const item = await onAddConfig(config) as { id?: number } | undefined;
-    if (item?.id) {
-      await onSelectConfig(item.id);
-    }
-    return item;
-  }
-
-  async function editActiveConfig(id: number, config: LLMScanConfigInput) {
-    await onEditConfig(id, config);
-    await onSelectConfig(id);
-  }
 
   function toggleChecked(skillRef: string) {
     setCheckedRefs((current) => {
@@ -168,7 +131,7 @@ export function ScanView({
                 onOpenSkill={onOpenSkill}
                 onToggleChecked={toggleChecked}
                 onScanSkill={onScanSkill}
-                onConfigure={onOpenConfig}
+                onConfigure={onConfigure}
                 onViewResult={setViewingSkillRef}
               />
             ))}
@@ -182,17 +145,6 @@ export function ScanView({
         completedAt={viewingState?.completedAt ?? null}
         llmConfig={llmConfig}
         onClose={() => setViewingSkillRef(null)}
-      />
-
-      <ScanConfigDetailModal
-        open={showConfig}
-        mode={activeConfig ? "edit" : "create"}
-        config={activeConfig}
-        onClose={onCloseConfig}
-        onAddConfig={addAndActivateConfig}
-        onEditConfig={editActiveConfig}
-        onRevealApiKey={onRevealApiKey}
-        onValidateConfig={onValidateConfig}
       />
 
       {checkedRefs.size > 0 ? (

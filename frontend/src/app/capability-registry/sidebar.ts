@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 
 import { mcpRoutes, useMcpInventoryQuery } from "../../features/mcp/public";
-import { useSkillsCopy } from "../../features/skills/i18n";
 import { skillsRoutes, useSkillsListQuery } from "../../features/skills/public";
 import { slashCommandRoutes, useSlashCommandsQuery } from "../../features/slash-commands/public";
 import { marketplaceRoutes } from "../../features/marketplace/public";
@@ -40,7 +39,6 @@ export function useSidebarModel(): SidebarModel {
   const mcpQuery = useMcpInventoryQuery();
   const slashCommandsQuery = useSlashCommandsQuery();
   const common = useCommonCopy();
-  const skillsCopy = useSkillsCopy();
 
   const inUseSkills = skillsQuery.data?.summary.managed ?? null;
   const needsReviewSkills = skillsQuery.data?.summary.unmanaged ?? null;
@@ -82,7 +80,6 @@ export function useSidebarModel(): SidebarModel {
               label: common.productLanguage.needsReview,
               count: needsReviewSkills,
             },
-            { key: "skills-scan-config", to: skillsRoutes.scanConfig, label: skillsCopy.scan.configNav },
           ],
         },
         {
@@ -177,7 +174,6 @@ export function useSidebarModel(): SidebarModel {
       slashCommandCount,
       slashCommandReviewCount,
       common,
-      skillsCopy,
     ],
   );
 }

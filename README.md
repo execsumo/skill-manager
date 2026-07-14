@@ -70,14 +70,14 @@ Scan Skills with an LLM-backed security review before you rely on them.
 
 Typical flow:
 
-1. Add and validate an LLM scan configuration.
+1. In Settings → Scan Config, add and validate an LLM configuration.
 2. Switch Skills in use to the Scan view.
 3. Run a scan for one Skill, selected Skills, or the full visible list.
 4. Review severity, findings, snippets, and remediation guidance.
 
 ![skill-manager-scan-view](./assets/skill-manager-scan-view.svg)
 
-Scan configurations are managed separately so you can save multiple providers, choose one active configuration, and keep API keys masked in list views.
+Scan configurations live under Settings so you can save multiple providers, choose one active configuration, and keep API keys masked in list views.
 
 ![skill-manager-scan-config](./assets/skill-manager-scan-config.svg)
 

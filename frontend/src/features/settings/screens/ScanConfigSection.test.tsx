@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LOCALE_STORAGE_KEY } from "../../../i18n";
 import { createRouteFetchMock, okJson } from "../../../test/fetch";
 import { renderWithAppProviders } from "../../../test/render";
-import ScanConfigPage from "./ScanConfigPage";
+import ScanConfigSection from "./ScanConfigSection";
 
 const fetchMock = vi.fn();
 
@@ -47,10 +47,10 @@ const configsPayload = {
 };
 
 function renderPage() {
-  return renderWithAppProviders(<ScanConfigPage />, { route: "/scan-config" });
+  return renderWithAppProviders(<ScanConfigSection />, { route: "/settings" });
 }
 
-describe("ScanConfigPage", () => {
+describe("ScanConfigSection", () => {
   beforeEach(() => {
     fetchMock.mockImplementation(
       createRouteFetchMock([

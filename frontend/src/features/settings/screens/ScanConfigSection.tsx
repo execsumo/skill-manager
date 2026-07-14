@@ -1,13 +1,11 @@
 import { useMemo, useState } from "react";
 import { CheckCircle2, Pencil, Plus, Trash2 } from "lucide-react";
 
-import type { ScanConfigItem } from "../api/scan-types";
 import { ErrorBanner } from "../../../components/ErrorBanner";
 import { LoadingSpinner } from "../../../components/LoadingSpinner";
-import { PageHeader } from "../../../components/PageHeader";
-import { ScanConfigDetailModal } from "../components/scan/ScanConfigDetailModal";
-import { useSkillsCopy } from "../i18n";
-import { useSkillScan } from "../model/use-skill-scan";
+import { useSkillsCopy } from "../../skills/i18n";
+import { useSkillScan, ScanConfigDetailModal } from "../../skills/public";
+import type { ScanConfigItem } from "../../skills/public";
 
 type EditorState =
   | { mode: "create"; config: null }
@@ -18,7 +16,16 @@ function providerLabel(config: ScanConfigItem): string {
   return config.provider || "unknown";
 }
 
-export default function ScanConfigPage() {
+/**
+ * Scan Config section rendered inside the Settings page.
+ *
+ * The LLM scan configurations are credential/provider records used by the
+ * skills security scan. They are global (not skill-specific) so they are
+ * managed here under Settings rather than nested under the Skills nav. The
+ * shared store, client, modal, and `scan.css` live in the skills feature and
+ * are consumed through its public barrel.
+ */
+export default function ScanConfigSection() {
   const copy = useSkillsCopy().scan;
   const {
     configs,
@@ -83,23 +90,20 @@ export default function ScanConfigPage() {
   }
 
   return (
-    <>
-      <div className="page-chrome">
-        <PageHeader
-          title={copy.configTitle}
-          subtitle={copy.configSubtitle}
-          actions={
-            <button
-              type="button"
-              className="action-pill action-pill--md action-pill--accent"
-              onClick={() => setEditor({ mode: "create", config: null })}
-            >
-              <Plus size={14} />
-              {copy.newConfiguration}
-            </button>
-          }
-        />
+    <section className="settings-section" aria-label={copy.configsAria}>
+      <div className="settings-section__head">
+        <h2 className="settings-section__heading">{copy.configTitle}</h2>
+        <button
+          type="button"
+          className="action-pill action-pill--md action-pill--accent"
+          onClick={() => setEditor({ mode: "create", config: null })}
+        >
+          <Plus size={14} />
+          {copy.newConfiguration}
+        </button>
       </div>
+
+      <p className="muted-text">{copy.configSubtitle}</p>
 
       {errorMessage ? <ErrorBanner message={errorMessage} onDismiss={() => setErrorMessage(null)} /> : null}
 
@@ -110,22 +114,10 @@ export default function ScanConfigPage() {
       ) : configs.length === 0 ? (
         <div className="empty-panel">
           <h3 className="empty-panel__title">{copy.noConfigsTitle}</h3>
-          <p className="empty-panel__body">
-            {copy.noConfigsBody}
-          </p>
-          <div className="empty-panel__actions">
-            <button
-              type="button"
-              className="action-pill action-pill--md action-pill--accent"
-              onClick={() => setEditor({ mode: "create", config: null })}
-            >
-              <Plus size={14} />
-              {copy.newConfiguration}
-            </button>
-          </div>
+          <p className="empty-panel__body">{copy.noConfigsBody}</p>
         </div>
       ) : (
-        <section className="scan-config-list" aria-label={copy.configsAria}>
+        <div className="scan-config-list" aria-label={copy.configsAria}>
           <div className="scan-config-table-wrapper">
             <table className="scan-config-table" aria-label={copy.configsAria}>
               <colgroup>
@@ -208,7 +200,7 @@ export default function ScanConfigPage() {
               </tbody>
             </table>
           </div>
-        </section>
+        </div>
       )}
 
       <ScanConfigDetailModal
@@ -221,6 +213,6 @@ export default function ScanConfigPage() {
         onValidateConfig={validateConfig}
         onRevealApiKey={revealConfigApiKey}
       />
-    </>
+    </section>
   );
 }

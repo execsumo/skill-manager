@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Columns3, FolderPlus, LayoutGrid, Rows3, Shield } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { SkillActionConfirmDialog } from "../components/dialogs/SkillActionConfirmDialog";
 import { FilterBar } from "../../../components/FilterBar";
@@ -64,8 +64,8 @@ export default function SkillsInUsePage() {
   const common = useCommonCopy();
   const [pill, setPill] = useState<InUsePillValue>("all");
   const [viewMode, setViewMode] = useInUseViewMode();
-  const [showScanConfig, setShowScanConfig] = useState(false);
   const scan = useSkillScan();
+  const navigate = useNavigate();
   const [pendingConfirm, setPendingConfirm] = useState<{
     action: "unmanage" | "delete";
     skillRef: string;
@@ -212,18 +212,9 @@ export default function SkillsInUsePage() {
                 scanStateMap={scan.scanState}
                 getScanState={scan.getScanState}
                 llmConfig={scan.llmConfig}
-                configs={scan.configs}
-                activeConfigId={scan.activeConfigId}
-                showConfig={showScanConfig}
                 onOpenSkill={onOpenSkill}
                 onScanSkill={(skillRef) => void scan.scanSkill(skillRef)}
-                onOpenConfig={() => setShowScanConfig(true)}
-                onCloseConfig={() => setShowScanConfig(false)}
-                onSelectConfig={scan.selectConfig}
-                onAddConfig={scan.addConfig}
-                onEditConfig={scan.editConfig}
-                onRevealApiKey={scan.revealConfigApiKey}
-                onValidateConfig={scan.validateConfig}
+                onConfigure={() => navigate("/settings")}
               />
             ) : viewMode === "board" ? (
               <BoardView
