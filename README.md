@@ -160,11 +160,6 @@ Native release artifacts are published on GitHub Releases for macOS ARM64/x64 an
       <a href="https://opencode.ai/docs">Docs</a>
     </td>
     <td align="center" valign="middle">
-      <img src="assets/harness-logos/hermes-logo.png" alt="Hermes Agent" height="56" /><br />
-      <strong>Hermes Agent</strong><br />
-      <a href="https://hermes-agent.nousresearch.com/docs">Docs</a>
-    </td>
-    <td align="center" valign="middle">
       <img src="assets/harness-logos/openclaw-logo.svg" alt="OpenClaw" height="56" /><br />
       <strong>OpenClaw</strong><br />
       <a href="https://docs.openclaw.ai/start/getting-started">Docs</a>

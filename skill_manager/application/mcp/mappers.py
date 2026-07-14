@@ -406,7 +406,6 @@ _MAPPERS: dict[str, TransportMapper] = {
     "hermes": HermesMapper(),
     "openclaw": OpenClawMapper(),
     "antigravity-cli": AntigravityCliMapper(),
-    "hermes": HermesMapper(),
 }
 
 
