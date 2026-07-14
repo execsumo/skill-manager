@@ -54,4 +54,4 @@ version = { attr = "skill_manager.__version__" }
 include = ["skill_manager*"]
 
 [tool.setuptools.package-data]
-skill_manager = ["VERSION", "data/prompts/*"]
+skill_manager = ["VERSION", "data/prompts/*", "data/templates/*"]

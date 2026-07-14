@@ -8,6 +8,8 @@ from skill_manager.db.repositories import ScanConfigRepository
 from skill_manager.harness import HarnessKernelService, HarnessSupportStore
 from skill_manager.paths import AppPaths, resolve_app_paths
 
+from .scaffold import ScaffoldService
+
 from .cli_marketplace import CliMarketplaceCatalog
 from .invalidation import InvalidationFanout
 from .mcp.enrichment import McpEnrichmentService
@@ -97,6 +99,7 @@ class BackendContainer:
     db: Database
     scan_config_service: ScanConfigService
     scan_service: ScanService
+    scaffold_service: ScaffoldService
 
 
 def build_backend_container(
@@ -226,6 +229,7 @@ def build_backend_container(
         scan_config_service,
         target_resolver=ScanTargetResolver(skills_queries),
     )
+    scaffold_service = ScaffoldService(paths.data_dir)
 
     return BackendContainer(
         paths=paths,
@@ -265,4 +269,5 @@ def build_backend_container(
         db=db,
         scan_config_service=scan_config_service,
         scan_service=scan_service,
+        scaffold_service=scaffold_service,
     )
