@@ -91,10 +91,6 @@ class CursorMapper(_TypedMcpServersMapper):
     observed_harness = "cursor"
 
 
-class HermesMapper(_TypedMcpServersMapper):
-    observed_harness = "hermes"
-
-
 # OpenCode -----------------------------------------------------------------
 
 
@@ -216,6 +212,61 @@ class CodexMapper:
             )
         raise MutationError(
             f"unsupported codex mcp entry '{name}': missing 'command' and 'url'",
+            status=400,
+        )
+
+
+# Hermes -------------------------------------------------------------------
+
+class HermesMapper:
+    # Hermes config.yaml mcp_servers entry shape:
+    # stdio: {command, args, env}; http: {url, headers}; sse: {url, transport: sse, headers}
+
+    def spec_to_dict(self, spec: McpServerSpec) -> dict[str, object]:
+        if spec.transport == "stdio":
+            payload: dict[str, object] = {}
+            if spec.command is not None:
+                payload["command"] = spec.command
+            if spec.args:
+                payload["args"] = list(spec.args)
+            if spec.env:
+                payload["env"] = dict(spec.env)
+            return payload
+        payload = {}
+        if spec.url is not None:
+            payload["url"] = spec.url
+        if spec.transport == "sse":
+            payload["transport"] = "sse"
+        if spec.headers:
+            payload["headers"] = dict(spec.headers)
+        return payload
+
+    def dict_to_spec(
+        self, name: str, raw: Mapping[str, object], *, source: McpSource | None = None
+    ) -> McpServerSpec:
+        if "command" in raw or "args" in raw:
+            return McpServerSpec(
+                name=name,
+                display_name=name,
+                source=source or McpSource.adopted("hermes", name),
+                transport="stdio",
+                command=_str_or_none(raw.get("command")),
+                args=_str_tuple(raw.get("args")),
+                env=_str_pairs(raw.get("env")),
+            )
+        if "url" in raw:
+            transport_raw = _str_or_none(raw.get("transport"))
+            transport = "sse" if transport_raw == "sse" else "http"
+            return McpServerSpec(
+                name=name,
+                display_name=name,
+                source=source or McpSource.adopted("hermes", name),
+                transport=transport,
+                url=_str_or_none(raw.get("url")),
+                headers=_str_pairs(raw.get("headers")),
+            )
+        raise MutationError(
+            f"unsupported hermes mcp entry '{name}': missing 'command' and 'url'",
             status=400,
         )
 

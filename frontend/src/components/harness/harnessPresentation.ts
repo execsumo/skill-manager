@@ -26,6 +26,10 @@ const HARNESS_LOGO_ASSETS: Record<HarnessLogoKey, HarnessPresentation> = {
     logoSrc: cursorLogo,
     variant: "cursor",
   },
+  hermes: {
+    logoSrc: hermesLogo,
+    variant: "hermes",
+  },
   opencode: {
     logoSrc: opencodeLogo,
     variant: "opencode",
@@ -37,10 +41,6 @@ const HARNESS_LOGO_ASSETS: Record<HarnessLogoKey, HarnessPresentation> = {
   agy: {
     logoSrc: agyLogo,
     variant: "agy",
-  },
-  hermes: {
-    logoSrc: hermesLogo,
-    variant: "hermes",
   },
 };
 

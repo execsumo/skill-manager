@@ -12,6 +12,19 @@ from .contracts import (
 )
 
 
+def _hermes_home(context) -> Path:
+    override = context.env.get("SKILL_MANAGER_HERMES_HOME") or context.env.get("HERMES_HOME")
+    return Path(override) if override else context.home / ".hermes"
+
+
+def _hermes_skills_root(context) -> Path:
+    return _hermes_home(context) / "skills"
+
+
+def _hermes_config_path(context) -> Path:
+    return _hermes_home(context) / "config.yaml"
+
+
 def supported_harness_definitions() -> tuple[HarnessDefinition, ...]:
     return SUPPORTED_HARNESS_DEFINITIONS
 
@@ -226,6 +239,36 @@ SUPPORTED_HARNESS_DEFINITIONS: tuple[HarnessDefinition, ...] = (
         },
     ),
     HarnessDefinition(
+        harness="hermes",
+        label="Hermes Agent",
+        logo_key="hermes",
+        install_probe="hermes",
+        bindings={
+            "skills": FileTreeBindingProfile(
+                managed_env="SKILL_MANAGER_HERMES_ROOT",
+                managed_default=_hermes_skills_root,
+                layout="categorized",
+                default_category="skill-manager",
+            ),
+            "mcp": ConfigSubtreeBindingProfile(
+                config_path_resolver=_hermes_config_path,
+                file_format="yaml",
+                subtree_path=("mcp_servers",),
+                codec="hermes",
+            ),
+            "slash_commands": CommandFileBindingProfile(
+                root_path_resolver=_hermes_home,
+                output_dir_resolver=lambda context: _hermes_home(context) / "commands",
+                invocation_prefix="/",
+                render_format="frontmatter_markdown",
+                scope="global",
+                docs_url="",
+                file_glob="*.md",
+                supports_frontmatter=True,
+            ),
+        },
+    ),
+    HarnessDefinition(
         harness="openclaw",
         label="OpenClaw",
         logo_key="openclaw",
@@ -300,34 +343,6 @@ SUPPORTED_HARNESS_DEFINITIONS: tuple[HarnessDefinition, ...] = (
                 file_format="json",
                 subtree_path=("permissions",),
                 codec="antigravity-permissions",
-            ),
-        },
-    ),
-    HarnessDefinition(
-        harness="hermes",
-        label="Hermes Agent",
-        logo_key="hermes",
-        install_probe="hermes",
-        bindings={
-            "skills": FileTreeBindingProfile(
-                managed_env="SKILL_MANAGER_HERMES_ROOT",
-                managed_default=lambda context: context.home / ".hermes" / "skills",
-            ),
-            "mcp": ConfigSubtreeBindingProfile(
-                config_path_resolver=lambda context: context.home / ".hermes" / "mcp.json",
-                file_format="json",
-                subtree_path=("mcpServers",),
-                codec="hermes",
-            ),
-            "slash_commands": CommandFileBindingProfile(
-                root_path_resolver=lambda context: context.home / ".hermes",
-                output_dir_resolver=lambda context: context.home / ".hermes" / "commands",
-                invocation_prefix="/",
-                render_format="frontmatter_markdown",
-                scope="global",
-                docs_url="",
-                file_glob="*.md",
-                supports_frontmatter=True,
             ),
         },
     ),
