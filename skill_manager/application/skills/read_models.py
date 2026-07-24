@@ -47,10 +47,11 @@ class SkillsReadModelService:
         *,
         store: SkillStore,
         kernel: HarnessKernelService,
+        data_dir: Path | None = None,
     ) -> "SkillsReadModelService":
         return cls(
             store=store,
-            adapters=build_skills_adapters(kernel),
+            adapters=build_skills_adapters(kernel, data_dir=data_dir),
             kernel=kernel,
         )
 

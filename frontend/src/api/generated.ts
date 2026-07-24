@@ -1182,8 +1182,6 @@ export interface components {
             mcps: string[];
             /** Name */
             name: string;
-            /** Packageslug */
-            packageSlug: string;
             /** Ref */
             ref: string;
             /** Skills */

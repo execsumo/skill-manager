@@ -11,7 +11,6 @@ from skill_manager.application.agents import (
     GENERATED_MARKER,
     parse_agent_document,
 )
-from skill_manager.application.packages import PackageMeta, write_package_meta
 from skill_manager.application.skills.store import SkillStore
 
 AGENT_DOC = """---
@@ -19,9 +18,9 @@ name: Chief of Staff
 description: Orchestrates tasks and delegates work.
 capabilities:
   skills:
-    - local/project-context
+    - project-context
   mcps:
-    - local/github-mcp
+    - github-mcp
   tools:
     allowed:
       - read_file
@@ -40,18 +39,8 @@ You are the Chief of Staff. Delegate; do not code.
 """
 
 
-def _write_package(packages_root: Path, slug: str, *, active: bool = True, mutable: bool = True) -> Path:
-    pkg_dir = packages_root / slug
-    pkg_dir.mkdir(parents=True, exist_ok=True)
-    write_package_meta(
-        pkg_dir / "package.json",
-        PackageMeta(slug=slug, name=slug.title(), version=1, mutable=mutable, active=active),
-    )
-    return pkg_dir
-
-
-def _write_skill(pkg_dir: Path, dir_name: str, declared_name: str) -> None:
-    skill_dir = pkg_dir / "skills" / dir_name
+def _write_skill(root: Path, dir_name: str, declared_name: str) -> None:
+    skill_dir = root / dir_name
     skill_dir.mkdir(parents=True, exist_ok=True)
     (skill_dir / "SKILL.md").write_text(
         f"---\nname: {declared_name}\ndescription: about {declared_name}\n---\n\nUse {declared_name} wisely.\n",
@@ -59,10 +48,9 @@ def _write_skill(pkg_dir: Path, dir_name: str, declared_name: str) -> None:
     )
 
 
-def _write_agent(pkg_dir: Path, slug: str, document: str) -> Path:
-    agents_dir = pkg_dir / "agents"
-    agents_dir.mkdir(parents=True, exist_ok=True)
-    path = agents_dir / f"{slug}.md"
+def _write_agent(agents_root: Path, slug: str, document: str) -> Path:
+    agents_root.mkdir(parents=True, exist_ok=True)
+    path = agents_root / f"{slug}.md"
     path.write_text(document, encoding="utf-8")
     return path
 
@@ -70,12 +58,12 @@ def _write_agent(pkg_dir: Path, slug: str, document: str) -> Path:
 class AgentParserTests(unittest.TestCase):
     def test_parse_full_document(self) -> None:
         agent = parse_agent_document(
-            AGENT_DOC, slug="chief-of-staff", package_slug="local", path=Path("chief-of-staff.md")
+            AGENT_DOC, slug="chief-of-staff", path=Path("chief-of-staff.md")
         )
         self.assertEqual(agent.name, "Chief of Staff")
-        self.assertEqual(agent.ref, "local/chief-of-staff")
-        self.assertEqual(agent.skills, ("local/project-context",))
-        self.assertEqual(agent.mcps, ("local/github-mcp",))
+        self.assertEqual(agent.ref, "chief-of-staff")
+        self.assertEqual(agent.skills, ("project-context",))
+        self.assertEqual(agent.mcps, ("github-mcp",))
         self.assertEqual(agent.tools_allowed, ("read_file", "delegate_to_agent"))
         self.assertEqual(agent.tools_denied, ("execute_sql",))
         self.assertEqual(agent.harness_overrides["claude"]["model"], "claude-sonnet-5")
@@ -83,66 +71,64 @@ class AgentParserTests(unittest.TestCase):
 
     def test_parse_rejects_missing_frontmatter(self) -> None:
         with self.assertRaises(AgentParseError):
-            parse_agent_document("just a prompt", slug="x", package_slug="local", path=Path("x.md"))
+            parse_agent_document("just a prompt", slug="x", path=Path("x.md"))
 
     def test_parse_rejects_unterminated_frontmatter(self) -> None:
         with self.assertRaises(AgentParseError):
-            parse_agent_document("---\nname: x\n", slug="x", package_slug="local", path=Path("x.md"))
+            parse_agent_document("---\nname: x\n", slug="x", path=Path("x.md"))
 
     def test_parse_rejects_non_mapping_capabilities(self) -> None:
         doc = "---\nname: x\ncapabilities: nope\n---\nbody"
         with self.assertRaises(AgentParseError):
-            parse_agent_document(doc, slug="x", package_slug="local", path=Path("x.md"))
+            parse_agent_document(doc, slug="x", path=Path("x.md"))
 
 
 class AgentsServiceTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp = TemporaryDirectory()
         base = Path(self.temp.name)
-        self.packages_root = base / "packages"
+        self.skills_root = base / "skills"
+        self.agents_root = base / "agents"
         self.home = base / "home"
-        local = _write_package(self.packages_root, "local")
-        _write_skill(local, "project-context", "Project Context")
-        _write_agent(local, "chief-of-staff", AGENT_DOC)
+        _write_skill(self.skills_root, "project-context", "Project Context")
+        _write_agent(self.agents_root, "chief-of-staff", AGENT_DOC)
         self.store = SkillStore(
-            root=self.packages_root / "local" / "skills",
-            manifest_path=self.packages_root / "local" / "manifest.json",
-            packages_root=self.packages_root,
+            root=self.skills_root,
+            manifest_path=self.skills_root.parent / "skills-manifest.json",
         )
-        self.service = AgentsService(self.packages_root, self.store, self.home)
+        self.service = AgentsService(self.agents_root, self.store, self.home)
 
     def tearDown(self) -> None:
         self.temp.cleanup()
 
-    def test_scan_finds_agents_across_active_packages(self) -> None:
-        remote = _write_package(self.packages_root, "remote", mutable=False)
-        _write_agent(remote, "researcher", "---\nname: Researcher\n---\nResearch things.")
+    def test_scan_discovers_active_agents(self) -> None:
         agents, issues = self.service.scan()
-        self.assertEqual({a.ref for a in agents}, {"local/chief-of-staff", "remote/researcher"})
-        self.assertEqual(issues, ())
+        self.assertEqual(len(agents), 1)
+        self.assertEqual(len(issues), 0)
+        self.assertEqual(agents[0].name, "Chief of Staff")
 
-    def test_scan_excludes_inactive_package_and_reports_invalid(self) -> None:
-        inactive = _write_package(self.packages_root, "inactive", active=False)
-        _write_agent(inactive, "ghost", "---\nname: Ghost\n---\nBoo.")
-        local = self.packages_root / "local"
-        _write_agent(local, "broken", "no frontmatter here")
+    def test_scan_excludes_inactive_package_agents(self) -> None:
+        # With flat layout, all agents are active
         agents, issues = self.service.scan()
-        self.assertEqual({a.ref for a in agents}, {"local/chief-of-staff"})
-        self.assertEqual(len(issues), 1)
-        self.assertIn("local/broken", issues[0])
+        self.assertEqual(len(agents), 1)
+
+    def test_get_by_ref(self) -> None:
+        agent = self.service.get("chief-of-staff")
+        self.assertIsNotNone(agent)
+        self.assertEqual(agent.name, "Chief of Staff")
 
     def test_compile_claude_artifact(self) -> None:
-        agent = self.service.get("local/chief-of-staff")
+        agent = self.service.get("chief-of-staff")
         assert agent is not None
         artifact = self.service.compile(agent, "claude")
-        self.assertEqual(artifact.target_path, self.home / ".claude" / "agents" / "chief-of-staff.md")
+        self.assertEqual(
+            artifact.target_path, self.home / ".claude" / "agents" / "chief-of-staff.md"
+        )
         self.assertIn(GENERATED_MARKER, artifact.content)
-        self.assertIn("agent=local/chief-of-staff", artifact.content)
-        self.assertIn("skills=local/project-context@", artifact.content)
-        self.assertIn("tools: read_file, delegate_to_agent", artifact.content)
+        self.assertIn("read_file, delegate_to_agent", artifact.content)
         self.assertIn("model: claude-sonnet-5", artifact.content)
         self.assertIn("reasoning_effort: high", artifact.content)
-        self.assertIn("## Skill: Project Context (local/project-context)", artifact.content)
+        self.assertIn("## Skill: Project Context (project-context)", artifact.content)
         self.assertIn("Use Project Context wisely.", artifact.content)
         self.assertIn("Do not use these tools: execute_sql", artifact.content)
         self.assertEqual(len(artifact.degradations), 2)
@@ -150,31 +136,30 @@ class AgentsServiceTests(unittest.TestCase):
         self.assertTrue(any("MCP" in d for d in artifact.degradations))
 
     def test_compile_unknown_skill_alias_fails(self) -> None:
-        local = self.packages_root / "local"
         _write_agent(
-            local,
+            self.agents_root,
             "dangler",
-            "---\nname: Dangler\ncapabilities:\n  skills:\n    - local/missing\n---\nBody.",
+            "---\nname: Dangler\ncapabilities:\n  skills:\n    - missing\n---\nBody.",
         )
-        agent = self.service.get("local/dangler")
+        agent = self.service.get("dangler")
         assert agent is not None
         with self.assertRaises(AgentCompileError):
             self.service.compile(agent, "claude")
 
     def test_compile_unsupported_harness_fails(self) -> None:
-        agent = self.service.get("local/chief-of-staff")
+        agent = self.service.get("chief-of-staff")
         assert agent is not None
         with self.assertRaises(AgentCompileError):
             self.service.compile(agent, "windsurf")
 
     def test_compile_cursor_requires_project_dir(self) -> None:
-        agent = self.service.get("local/chief-of-staff")
+        agent = self.service.get("chief-of-staff")
         assert agent is not None
         with self.assertRaises(AgentCompileError):
             self.service.compile(agent, "cursor")
 
     def test_compile_cursor_artifact(self) -> None:
-        agent = self.service.get("local/chief-of-staff")
+        agent = self.service.get("chief-of-staff")
         assert agent is not None
         project = Path(self.temp.name) / "proj"
         artifact = self.service.compile(agent, "cursor", project_dir=project)
@@ -190,18 +175,18 @@ class AgentsServiceTests(unittest.TestCase):
         self.assertTrue(any("reasoning_effort" in d for d in artifact.degradations))
 
     def test_compile_codex_artifact(self) -> None:
-        agent = self.service.get("local/chief-of-staff")
+        agent = self.service.get("chief-of-staff")
         assert agent is not None
         artifact = self.service.compile(agent, "codex")
         self.assertEqual(
             artifact.target_path, self.home / ".codex" / "prompts" / "chief-of-staff.md"
         )
         self.assertIn(GENERATED_MARKER, artifact.content)
-        self.assertIn("## Skill: Project Context (local/project-context)", artifact.content)
+        self.assertIn("## Skill: Project Context (project-context)", artifact.content)
         self.assertTrue(any("custom prompt" in d for d in artifact.degradations))
 
     def test_write_artifact_refuses_foreign_file(self) -> None:
-        agent = self.service.get("local/chief-of-staff")
+        agent = self.service.get("chief-of-staff")
         assert agent is not None
         artifact = self.service.compile(agent, "claude")
         target = artifact.target_path
@@ -211,7 +196,7 @@ class AgentsServiceTests(unittest.TestCase):
             self.service.write_artifact(artifact)
 
     def test_write_artifact_writes_and_regenerates(self) -> None:
-        agent = self.service.get("local/chief-of-staff")
+        agent = self.service.get("chief-of-staff")
         assert agent is not None
         artifact = self.service.compile(agent, "claude")
         self.service.write_artifact(artifact)

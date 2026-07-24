@@ -14,11 +14,10 @@ function agentsFixture(): AgentsPageResponse {
     issues: ["Issue 1", "Issue 2"],
     agents: [
       {
-        ref: "pkg:agent1",
+        ref: "agent1",
         slug: "agent1",
         name: "Test Agent 1",
         description: "A cool agent",
-        packageSlug: "pkg",
         skills: ["skill1", "skill2"],
         mcps: ["mcp1"],
         compileTargets: ["cursor", "codex"],
@@ -26,11 +25,10 @@ function agentsFixture(): AgentsPageResponse {
         toolsDenied: [],
       },
       {
-        ref: "pkg:agent2",
+        ref: "agent2",
         slug: "agent2",
         name: "Test Agent 2",
         description: "",
-        packageSlug: "pkg",
         skills: [],
         mcps: [],
         compileTargets: ["codex"],
@@ -102,7 +100,7 @@ describe("AgentsPage", () => {
   it("opens hire dialog when clicking Hire Agent button", async () => {
     fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === "string" ? input : input.toString();
-      if (url.includes("/api/agents/pkg%3Aagent1/compile")) {
+      if (url.includes("/api/agents/agent1/compile")) {
         const body = JSON.parse(String(init?.body));
         if (body.dryRun) {
           return okJson({
@@ -206,7 +204,7 @@ describe("AgentsPage", () => {
     let updateCalled = false;
     fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === "string" ? input : input.toString();
-      if (url.includes("/api/agents/pkg%3Aagent1")) {
+      if (url.includes("/api/agents/agent1")) {
         updateCalled = true;
         const body = JSON.parse(String(init?.body));
         expect(body).toEqual({

@@ -20,12 +20,16 @@ class FakeHomeSpec:
     xdg_state_home: Path
 
     @property
-    def packages_root(self) -> Path:
-        return self.xdg_data_home / "skill-manager" / "packages"
+    def legacy_packages_skills_store_root(self) -> Path:
+        return self.xdg_data_home / "skill-manager" / "packages" / "local" / "skills"
 
     @property
     def skills_store_root(self) -> Path:
-        return self.packages_root / "local" / "skills"
+        return self.xdg_data_home / "skill-manager" / "skills"
+
+    @property
+    def agents_root(self) -> Path:
+        return self.xdg_data_home / "skill-manager" / "agents"
 
     @property
     def legacy_skills_store_root(self) -> Path:
@@ -103,6 +107,7 @@ def create_fake_home_spec(root: Path, *, seed_openclaw_state: bool = True) -> Fa
     )
     for path in (
         spec.skills_store_root,
+        spec.agents_root,
         spec.codex_root,
         spec.codex_legacy_root,
         spec.claude_root,
@@ -163,15 +168,8 @@ def seed_skill_package(
 
 def seed_store_manifest(spec: FakeHomeSpec, entries: list[SkillStoreEntry]) -> None:
     write_skill_store_manifest(
-        spec.skills_store_root.parent / "manifest.json",
+        spec.skills_store_root.parent / "skills-manifest.json",
         SkillStoreManifest(entries=tuple(entries)),
-    )
-    from skill_manager.application.packages import write_package_meta, PackageMeta
-    spec.packages_root.mkdir(parents=True, exist_ok=True)
-    (spec.packages_root / "local").mkdir(parents=True, exist_ok=True)
-    write_package_meta(
-        spec.packages_root / "local" / "package.json",
-        PackageMeta(slug="local", name="Local", version=1, mutable=True, active=True)
     )
 
 def seed_legacy_store_manifest(spec: FakeHomeSpec, entries: list[SkillStoreEntry]) -> None:

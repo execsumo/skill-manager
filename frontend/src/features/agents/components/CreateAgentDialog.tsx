@@ -97,7 +97,7 @@ export function CreateAgentDialog({
           </div>
 
           <div id="create-agent-dialog-desc" style={{ display: "none" }}>
-            Scaffold a new agent persona in packages/local/agents/.
+            Scaffold a new agent persona in agents/.
           </div>
 
           <form onSubmit={handleSubmit} className="dialog-form" style={{ marginTop: "16px" }}>

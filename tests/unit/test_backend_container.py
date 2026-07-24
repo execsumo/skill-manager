@@ -5,6 +5,8 @@ from tempfile import TemporaryDirectory
 import unittest
 
 from skill_manager.application import build_backend_container
+from skill_manager.application.container import _migrate_legacy_layouts, _rewrite_agent_local_prefix
+from skill_manager.application.agents.parser import split_frontmatter
 from skill_manager.application.skills.manifest import SkillStoreEntry
 from skill_manager.application.skills.package import fingerprint_package
 from skill_manager.sources import ResolvedGitHubSkill
@@ -325,6 +327,128 @@ class BackendContainerServiceTests(unittest.TestCase):
                 "installedSkillRef": "shared:mode-switch",
             })
             self.assertIn(document["status"], {"ready", "unavailable"})
+
+
+class LegacyLayoutMigrationTests(unittest.TestCase):
+    """Tests for _migrate_legacy_layouts covering both old shapes and agent rewriting."""
+
+    def test_migrates_from_shared_shape(self) -> None:
+        """Pre-package shape: data_dir/shared → data_dir/skills"""
+        with TemporaryDirectory() as temp_dir:
+            spec = create_fake_home_spec(Path(temp_dir))
+            data_dir = spec.xdg_data_home / "skill-manager"
+            legacy_dir = data_dir / "shared"
+            legacy_dir.mkdir(parents=True)
+            (legacy_dir / "audit").mkdir()
+            (legacy_dir / "audit" / "SKILL.md").write_text("---\nname: Audit\n---\nbody", encoding="utf-8")
+            (legacy_dir / "trace").mkdir()
+            (legacy_dir / "trace" / "SKILL.md").write_text("---\nname: Trace\n---\nbody", encoding="utf-8")
+
+            _migrate_legacy_layouts(data_dir, spec.skills_store_root, spec.agents_root)
+
+            self.assertTrue((spec.skills_store_root / "audit" / "SKILL.md").is_file())
+            self.assertTrue((spec.skills_store_root / "trace" / "SKILL.md").is_file())
+            self.assertFalse((legacy_dir / "audit").exists())
+            self.assertFalse((legacy_dir / "trace").exists())
+
+    def test_migrates_from_package_layout_shape(self) -> None:
+        """Package-layout shape: data_dir/packages/local/skills → data_dir/skills"""
+        with TemporaryDirectory() as temp_dir:
+            spec = create_fake_home_spec(Path(temp_dir))
+            data_dir = spec.xdg_data_home / "skill-manager"
+            legacy_dir = data_dir / "packages" / "local" / "skills"
+            legacy_dir.mkdir(parents=True)
+            (legacy_dir / "audit").mkdir()
+            (legacy_dir / "audit" / "SKILL.md").write_text("---\nname: Audit\n---\nbody", encoding="utf-8")
+
+            _migrate_legacy_layouts(data_dir, spec.skills_store_root, spec.agents_root)
+
+            self.assertTrue((spec.skills_store_root / "audit" / "SKILL.md").is_file())
+
+    def test_migrates_manifest_from_legacy(self) -> None:
+        """Legacy manifest.json is copied to skills-manifest.json."""
+        with TemporaryDirectory() as temp_dir:
+            spec = create_fake_home_spec(Path(temp_dir))
+            data_dir = spec.xdg_data_home / "skill-manager"
+            legacy_dir = data_dir / "shared"
+            legacy_dir.mkdir(parents=True)
+            (legacy_dir / "audit").mkdir()
+            (legacy_dir / "audit" / "SKILL.md").write_text("---\nname: Audit\n---\nbody", encoding="utf-8")
+            manifest_path = data_dir / "manifest.json"
+            manifest_path.write_text('{"version":1,"entries":[]}', encoding="utf-8")
+
+            _migrate_legacy_layouts(data_dir, spec.skills_store_root, spec.agents_root)
+
+            target_manifest = data_dir / "skills-manifest.json"
+            self.assertTrue(target_manifest.is_file())
+            self.assertIn('"version"', target_manifest.read_text(encoding="utf-8"))
+
+    def test_agent_migration_rewrites_local_prefix(self) -> None:
+        """Agent .md files with local/<name> in skills/mcps get rewritten."""
+        with TemporaryDirectory() as temp_dir:
+            spec = create_fake_home_spec(Path(temp_dir))
+            data_dir = spec.xdg_data_home / "skill-manager"
+            legacy_agents = data_dir / "packages" / "local" / "agents"
+            legacy_agents.mkdir(parents=True)
+            agent_doc = (
+                "---\n"
+                "name: Chief of Staff\n"
+                "description: Orchestrates tasks.\n"
+                "capabilities:\n"
+                "  skills:\n"
+                "    - local/project-context\n"
+                "    - other-skill\n"
+                "  mcps:\n"
+                "    - local/github-mcp\n"
+                "---\n\n"
+                "You are a chief of staff.\n"
+            )
+            (legacy_agents / "chief-of-staff.md").write_text(agent_doc, encoding="utf-8")
+
+            _migrate_legacy_layouts(data_dir, spec.skills_store_root, spec.agents_root)
+
+            migrated = spec.agents_root / "chief-of-staff.md"
+            self.assertTrue(migrated.is_file())
+            content = migrated.read_text(encoding="utf-8")
+            self.assertNotIn("local/project-context", content)
+            self.assertIn("- project-context", content)
+            self.assertNotIn("local/github-mcp", content)
+            self.assertIn("- github-mcp", content)
+            self.assertIn("- other-skill", content)
+
+            # Verify the agent still parses correctly
+            metadata, body = split_frontmatter(content)
+            self.assertEqual(metadata["name"], "Chief of Staff")
+            self.assertEqual(
+                metadata["capabilities"]["skills"],
+                ["project-context", "other-skill"],
+            )
+            self.assertEqual(metadata["capabilities"]["mcps"], ["github-mcp"])
+
+    def test_agent_migration_preserves_non_local_entries(self) -> None:
+        """Agent .md files without local/ prefix are untouched."""
+        with TemporaryDirectory() as temp_dir:
+            spec = create_fake_home_spec(Path(temp_dir))
+            data_dir = spec.xdg_data_home / "skill-manager"
+            legacy_agents = data_dir / "packages" / "local" / "agents"
+            legacy_agents.mkdir(parents=True)
+            agent_doc = (
+                "---\n"
+                "name: Helper\n"
+                "capabilities:\n"
+                "  skills:\n"
+                "    - bare-skill\n"
+                "---\n\nBody.\n"
+            )
+            (legacy_agents / "helper.md").write_text(agent_doc, encoding="utf-8")
+
+            _migrate_legacy_layouts(data_dir, spec.skills_store_root, spec.agents_root)
+
+            migrated = spec.agents_root / "helper.md"
+            self.assertTrue(migrated.is_file())
+            content = migrated.read_text(encoding="utf-8")
+            self.assertIn("bare-skill", content)
+            self.assertNotIn("local/", content)
 
 
 if __name__ == "__main__":

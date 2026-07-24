@@ -8,7 +8,6 @@ class AgentSummaryResponse(BaseModel):
     slug: str
     name: str
     description: str
-    packageSlug: str
     skills: list[str]
     mcps: list[str]
     toolsAllowed: list[str]

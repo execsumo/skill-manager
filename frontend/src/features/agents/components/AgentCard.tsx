@@ -44,9 +44,6 @@ export function AgentCard({ agent, onHire, onEdit }: AgentCardProps) {
             <OverflowTooltipText as="h3" className="skill-card__name" style={{ fontSize: "16px", fontWeight: 600, color: "#0f172a" }}>
               {agent.name || agent.slug}
             </OverflowTooltipText>
-            <span style={{ fontSize: "11px", color: "#64748b", display: "inline-block", marginTop: "2px" }}>
-              package: <code>{agent.packageSlug}</code>
-            </span>
           </div>
 
           <button

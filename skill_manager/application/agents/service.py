@@ -5,7 +5,6 @@ from pathlib import Path
 import io
 from ruamel.yaml import YAML
 
-from skill_manager.application.packages import list_package_dirs, load_package_meta
 from skill_manager.application.skills.store import SkillStore
 from skill_manager.atomic_files import atomic_write_text
 
@@ -27,30 +26,21 @@ COMPILE_TARGETS = ("claude", "cursor", "codex")
 
 
 class AgentsService:
-    def __init__(self, packages_root: Path, skills_store: SkillStore, home: Path) -> None:
-        self.packages_root = packages_root
+    def __init__(self, agents_root: Path, skills_store: SkillStore, home: Path) -> None:
+        self.agents_root = agents_root
         self.skills_store = skills_store
         self.home = home
 
     def scan(self) -> tuple[tuple[AgentDefinition, ...], tuple[str, ...]]:
         agents: list[AgentDefinition] = []
         issues: list[str] = []
-        for pkg_dir in list_package_dirs(self.packages_root):
+        if not self.agents_root.is_dir():
+            return (), ()
+        for path in sorted(self.agents_root.glob("*.md")):
             try:
-                meta = load_package_meta(pkg_dir / "package.json")
-            except Exception as error:
-                issues.append(f"Unreadable package.json in {pkg_dir.name}: {error}")
-                continue
-            if not meta.active:
-                continue
-            agents_dir = pkg_dir / "agents"
-            if not agents_dir.is_dir():
-                continue
-            for path in sorted(agents_dir.glob("*.md")):
-                try:
-                    agents.append(parse_agent_file(path, package_slug=meta.slug))
-                except AgentParseError as error:
-                    issues.append(f"Invalid agent {meta.slug}/{path.stem}: {error}")
+                agents.append(parse_agent_file(path))
+            except AgentParseError as error:
+                issues.append(f"Invalid agent {path.stem}: {error}")
         return tuple(agents), tuple(issues)
 
     def get(self, agent_ref: str) -> AgentDefinition | None:
@@ -99,7 +89,7 @@ class AgentsService:
         new_content = f"---\n{new_frontmatter}\n---\n\n{body.lstrip()}"
         atomic_write_text(path, new_content)
 
-        return parse_agent_file(path, package_slug=agent.package_slug)
+        return parse_agent_file(path)
 
 
     def compile(
@@ -130,7 +120,7 @@ class AgentsService:
         by_alias: dict[str, ResolvedSkill] = {}
         for observation in scan.packages:
             pkg = observation.package
-            alias = f"{observation.owning_package_slug}/{pkg.root_path.name}"
+            alias = pkg.root_path.name
             by_alias[alias] = ResolvedSkill(
                 alias=alias,
                 declared_name=pkg.declared_name,
