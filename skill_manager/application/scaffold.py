@@ -31,7 +31,7 @@ class ScaffoldService:
             out_file = out_dir / "SKILL.md"
         elif req.asset_type == "agent":
             template_path = templates_dir / "agent.md"
-            out_dir = self.paths.packages_root / "local" / "agents"
+            out_dir = self.paths.agents_root
             out_file = out_dir / f"{slug}.md"
         elif req.asset_type == "mcp":
             template_path = templates_dir / "mcp.json"

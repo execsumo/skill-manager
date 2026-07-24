@@ -18,9 +18,9 @@ class AppPaths:
     config_dir: Path
     data_dir: Path
     state_dir: Path
-    packages_root: Path
     skills_store_root: Path
     skills_store_manifest: Path
+    agents_root: Path
     marketplace_cache_root: Path
     mcp_store_manifest: Path
     hooks_store_manifest: Path
@@ -44,9 +44,9 @@ def resolve_app_paths(env: dict[str, str] | None = None) -> AppPaths:
         config_dir=config_dir,
         data_dir=data_dir,
         state_dir=state_dir,
-        packages_root=data_dir / "packages",
-        skills_store_root=data_dir / "packages" / "local" / "skills",
-        skills_store_manifest=data_dir / "packages" / "local" / "manifest.json",
+        skills_store_root=data_dir / "skills",
+        skills_store_manifest=data_dir / "skills-manifest.json",
+        agents_root=data_dir / "agents",
         marketplace_cache_root=data_dir / "marketplace",
         mcp_store_manifest=data_dir / "mcp" / "manifest.json",
         hooks_store_manifest=data_dir / "hooks" / "manifest.json",

@@ -11,7 +11,7 @@ from .model import AgentDefinition, AgentParseError
 _yaml = YAML(typ="safe")
 
 
-def parse_agent_file(path: Path, *, package_slug: str) -> AgentDefinition:
+def parse_agent_file(path: Path) -> AgentDefinition:
     try:
         document = path.read_text(encoding="utf-8")
     except OSError as error:
@@ -19,12 +19,11 @@ def parse_agent_file(path: Path, *, package_slug: str) -> AgentDefinition:
     return parse_agent_document(
         document,
         slug=path.stem,
-        package_slug=package_slug,
         path=path,
     )
 
 
-def parse_agent_document(document: str, *, slug: str, package_slug: str, path: Path) -> AgentDefinition:
+def parse_agent_document(document: str, *, slug: str, path: Path) -> AgentDefinition:
     metadata, prompt = _split_frontmatter(document)
     name = _required_str(metadata, "name", slug)
     description = str(metadata.get("description", "") or "").strip()
@@ -45,7 +44,6 @@ def parse_agent_document(document: str, *, slug: str, package_slug: str, path: P
         tools_allowed=_str_tuple(tools.get("allowed"), "capabilities.tools.allowed"),
         tools_denied=_str_tuple(tools.get("denied"), "capabilities.tools.denied"),
         harness_overrides=harness_overrides,
-        package_slug=package_slug,
         path=path,
         fingerprint=hashlib.sha256(document.encode("utf-8")).hexdigest(),
     )

@@ -11,9 +11,11 @@ from skill_manager.paths import AppPaths, resolve_app_paths
 
 from .scaffold import ScaffoldService
 from .agents import AgentsService
-from .packages import PackageMeta, write_package_meta
+from .agents.parser import split_frontmatter
 from skill_manager.atomic_files import file_lock
 import shutil
+import io
+from ruamel.yaml import YAML
 
 from .cli_marketplace import CliMarketplaceCatalog
 from .invalidation import InvalidationFanout
@@ -106,43 +108,107 @@ class BackendContainer:
     scan_service: ScanService
     scaffold_service: ScaffoldService
     agents_service: AgentsService
+    app_home: Path
 
 
-def _migrate_to_packages(data_dir: Path, packages_root: Path) -> None:
-    legacy_shared = data_dir / "shared"
-    legacy_manifest = data_dir / "manifest.json"
-    local_pkg_dir = packages_root / "local"
+def _rewrite_agent_local_prefix(agent_path: Path) -> bool:
+    """Strip 'local/' prefix from capabilities.skills and capabilities.mcps."""
+    if not agent_path.is_file() or agent_path.suffix != ".md":
+        return False
+    document = agent_path.read_text(encoding="utf-8")
+    try:
+        metadata, body = split_frontmatter(document)
+    except Exception:
+        return False
+    changed = False
 
-    packages_root.mkdir(parents=True, exist_ok=True)
-    lock_path = packages_root / ".migration.lock"
-
-    with file_lock(lock_path):
-        if not (local_pkg_dir / "package.json").exists():
-            local_pkg_dir.mkdir(parents=True, exist_ok=True)
-            local_skills = local_pkg_dir / "skills"
-            if legacy_shared.exists():
-                if local_skills.exists():
-                    try:
-                        local_skills.rmdir()
-                    except OSError:
-                        pass
-                shutil.move(str(legacy_shared), str(local_skills))
+    skills = metadata.get("capabilities", {}).get("skills") if isinstance(metadata.get("capabilities"), dict) else None
+    if isinstance(skills, list):
+        new_skills = []
+        for s in skills:
+            s_str = str(s).strip()
+            if s_str.startswith("local/"):
+                new_skills.append(s_str[len("local/"):])
+                changed = True
             else:
-                local_skills.mkdir(parents=True, exist_ok=True)
+                new_skills.append(s_str)
+        if changed:
+            metadata.setdefault("capabilities", {})["skills"] = new_skills
 
-            if legacy_manifest.exists():
-                shutil.move(str(legacy_manifest), str(local_pkg_dir / "manifest.json"))
-            
-            write_package_meta(
-                local_pkg_dir / "package.json",
-                PackageMeta(
-                    slug="local",
-                    name="Local",
-                    version=1,
-                    mutable=True,
-                    active=True,
-                )
-            )
+    mcps = metadata.get("capabilities", {}).get("mcps") if isinstance(metadata.get("capabilities"), dict) else None
+    if isinstance(mcps, list):
+        new_mcps = []
+        for m in mcps:
+            m_str = str(m).strip()
+            if m_str.startswith("local/"):
+                new_mcps.append(m_str[len("local/"):])
+                changed = True
+            else:
+                new_mcps.append(m_str)
+        if changed:
+            metadata.setdefault("capabilities", {})["mcps"] = new_mcps
+
+    if not changed:
+        return False
+    yaml = YAML()
+    yaml.default_flow_style = False
+    stream = io.StringIO()
+    yaml.dump(metadata, stream)
+    new_frontmatter = stream.getvalue().strip()
+    new_content = f"---\n{new_frontmatter}\n---\n\n{body.lstrip()}"
+    agent_path.write_text(new_content, encoding="utf-8")
+    return True
+
+
+def _migrate_legacy_layouts(data_dir: Path, skills_store_root: Path, agents_root: Path) -> None:
+    """Migrate old storage layouts into the new flat layout.
+
+    Handles two old shapes:
+      - pre-package: ``data_dir/shared`` → ``data_dir/skills``
+      - package-layout: ``data_dir/packages/local/skills`` → ``data_dir/skills``
+    and similarly for agents: ``data_dir/packages/local/agents`` → ``data_dir/agents``.
+    Also moves legacy manifest files.
+    """
+    skills_store_root.mkdir(parents=True, exist_ok=True)
+    agents_root.mkdir(parents=True, exist_ok=True)
+
+    lock_path = data_dir / ".migration.lock"
+    with file_lock(lock_path):
+        # Skills migration
+        legacy_shared = data_dir / "shared"
+        legacy_pkg_skills = data_dir / "packages" / "local" / "skills"
+        legacy_manifest = data_dir / "manifest.json"
+        legacy_pkg_manifest = data_dir / "packages" / "local" / "manifest.json"
+
+        # Migrate skills from old shapes if the new directory looks empty
+        skills_populated = any(skills_store_root.iterdir()) if skills_store_root.is_dir() else False
+        if not skills_populated:
+            for legacy_dir in (legacy_pkg_skills, legacy_shared):
+                if legacy_dir.is_dir():
+                    for item in legacy_dir.iterdir():
+                        target = skills_store_root / item.name
+                        if not target.exists():
+                            shutil.move(str(item), str(target))
+                    break  # Only migrate the first-populated legacy shape
+
+            # Manifest migration
+            if not (data_dir / "skills-manifest.json").exists():
+                if legacy_pkg_manifest.is_file():
+                    shutil.copy2(str(legacy_pkg_manifest), str(data_dir / "skills-manifest.json"))
+                elif legacy_manifest.is_file():
+                    shutil.copy2(str(legacy_manifest), str(data_dir / "skills-manifest.json"))
+
+        # Agents migration
+        agents_populated = any(agents_root.iterdir()) if agents_root.is_dir() else False
+        if not agents_populated:
+            legacy_agents_dir = data_dir / "packages" / "local" / "agents"
+            if legacy_agents_dir.is_dir():
+                for item in legacy_agents_dir.iterdir():
+                    target = agents_root / item.name
+                    if not target.exists():
+                        shutil.move(str(item), str(target))
+                        if target.suffix == ".md":
+                            _rewrite_agent_local_prefix(target)
 
 
 def build_backend_container(
@@ -159,8 +225,9 @@ def build_backend_container(
         active_env.update(env)
 
     paths = resolve_app_paths(active_env)
+    app_home = resolve_context(active_env).home
     
-    _migrate_to_packages(paths.data_dir, paths.packages_root)
+    _migrate_legacy_layouts(paths.data_dir, paths.skills_store_root, paths.agents_root)
 
     support_store = HarnessSupportStore(paths.settings_path)
     harness_kernel = HarnessKernelService.from_environment(active_env, support_store=support_store)
@@ -169,9 +236,8 @@ def build_backend_container(
     skills_store = SkillStore(
         paths.skills_store_root,
         manifest_path=paths.skills_store_manifest,
-        packages_root=paths.packages_root,
     )
-    skills_read_models = SkillsReadModelService.from_kernel(store=skills_store, kernel=harness_kernel)
+    skills_read_models = SkillsReadModelService.from_kernel(store=skills_store, kernel=harness_kernel, data_dir=paths.data_dir)
     invalidation.register(skills_read_models)
 
     active_source_fetcher = source_fetcher or SourceFetchService()
@@ -281,9 +347,9 @@ def build_backend_container(
     )
     scaffold_service = ScaffoldService(paths)
     agents_service = AgentsService(
-        paths.packages_root,
+        paths.agents_root,
         skills_store,
-        resolve_context(active_env).home,
+        app_home,
     )
 
     return BackendContainer(
@@ -326,4 +392,5 @@ def build_backend_container(
         scan_service=scan_service,
         scaffold_service=scaffold_service,
         agents_service=agents_service,
+        app_home=app_home,
     )

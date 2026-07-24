@@ -20,13 +20,12 @@ class AgentDefinition:
     tools_allowed: tuple[str, ...]
     tools_denied: tuple[str, ...]
     harness_overrides: Mapping[str, Mapping[str, str]]
-    package_slug: str
     path: Path
     fingerprint: str
 
     @property
     def ref(self) -> str:
-        return f"{self.package_slug}/{self.slug}"
+        return self.slug
 
     @property
     def harnesses(self) -> tuple[str, ...]:

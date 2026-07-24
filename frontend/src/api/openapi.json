@@ -177,10 +177,6 @@
             "title": "Name",
             "type": "string"
           },
-          "packageSlug": {
-            "title": "Packageslug",
-            "type": "string"
-          },
           "ref": {
             "title": "Ref",
             "type": "string"
@@ -216,7 +212,6 @@
           "slug",
           "name",
           "description",
-          "packageSlug",
           "skills",
           "mcps",
           "toolsAllowed",
