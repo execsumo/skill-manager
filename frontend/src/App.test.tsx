@@ -97,9 +97,9 @@ describe("App shell", () => {
       expect(screen.getByRole("button", { name: "MCP Servers 3" })).toBeInTheDocument();
     });
     expect(screen.getByRole("link", { name: "In use 10" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Needs review 3" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Unmanaged 3" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "In use 2" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Needs review 1" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Unmanaged 1" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Marketplace" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Skills" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "MCP" })).toBeInTheDocument();
