@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
 import { CheckCircle2, Pencil, Plus, Trash2 } from "lucide-react";
 
+import { ConfirmActionDialog } from "../../../components/ConfirmActionDialog";
 import { ErrorBanner } from "../../../components/ErrorBanner";
 import { LoadingSpinner } from "../../../components/LoadingSpinner";
+import { useCommonCopy } from "../../../i18n";
 import { useSkillsCopy } from "../../skills/i18n";
 import { useSkillScan, ScanConfigDetailModal } from "../../skills/public";
 import type { ScanConfigItem } from "../../skills/public";
@@ -27,6 +29,7 @@ function providerLabel(config: ScanConfigItem): string {
  */
 export default function ScanConfigSection() {
   const copy = useSkillsCopy().scan;
+  const common = useCommonCopy();
   const {
     configs,
     activeConfigId,
@@ -39,6 +42,7 @@ export default function ScanConfigSection() {
     configLoaded,
   } = useSkillScan();
   const [editor, setEditor] = useState<EditorState>(null);
+  const [pendingDeleteConfig, setPendingDeleteConfig] = useState<ScanConfigItem | null>(null);
   const [pendingConfigId, setPendingConfigId] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -74,14 +78,15 @@ export default function ScanConfigSection() {
     setEditor({ mode: "edit", config });
   }
 
-  async function deleteConfig(config: ScanConfigItem) {
-    if (!window.confirm(copy.deleteConfigConfirm(config.name))) {
+  async function executeDeleteConfig() {
+    if (!pendingDeleteConfig) {
       return;
     }
-    setPendingConfigId(config.id);
+    setPendingConfigId(pendingDeleteConfig.id);
     setErrorMessage(null);
     try {
-      await removeConfig(config.id);
+      await removeConfig(pendingDeleteConfig.id);
+      setPendingDeleteConfig(null);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : String(error));
     } finally {
@@ -90,6 +95,7 @@ export default function ScanConfigSection() {
   }
 
   return (
+    <>
     <section className="settings-section" aria-label={copy.configsAria}>
       <div className="settings-section__head">
         <h2 className="settings-section__heading">{copy.configTitle}</h2>
@@ -187,7 +193,7 @@ export default function ScanConfigSection() {
                             type="button"
                             className="action-pill action-pill--danger"
                             disabled={pending}
-                            onClick={() => void deleteConfig(config)}
+                            onClick={() => setPendingDeleteConfig(config)}
                           >
                             <Trash2 size={12} />
                             {copy.table.delete}
@@ -214,5 +220,19 @@ export default function ScanConfigSection() {
         onRevealApiKey={revealConfigApiKey}
       />
     </section>
+
+      <ConfirmActionDialog
+        open={pendingDeleteConfig !== null}
+        title={copy.deleteConfigTitle(pendingDeleteConfig?.name ?? "scan config")}
+        description={copy.deleteConfigDescription}
+        confirmLabel={common.actions.delete}
+        pendingLabel={copy.deletingConfig}
+        isPending={pendingDeleteConfig !== null && pendingConfigId === pendingDeleteConfig.id}
+        onOpenChange={(open) => {
+          if (!open) setPendingDeleteConfig(null);
+        }}
+        onConfirm={executeDeleteConfig}
+      />
+    </>
   );
 }
